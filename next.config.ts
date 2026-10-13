@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // The whole app is per-user and reads fresh data on every request,
+  // so the classic dynamic rendering model is the right fit here.
+  cacheComponents: false,
   turbopack: {
     rules: {
       "*.css": {
