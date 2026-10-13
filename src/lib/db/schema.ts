@@ -34,9 +34,9 @@ export const statusEnum = pgEnum("entry_status", ["settled", "pending", "planned
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  username: text("username").notNull().unique(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(), // stored lowercased
   passwordHash: text("password_hash").notNull(),
-  mustChangePassword: boolean("must_change_password").notNull().default(true),
   settings: jsonb("settings").$type<Partial<UserSettings>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

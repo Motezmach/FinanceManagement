@@ -10,8 +10,8 @@ import { mergeSettings, type UserSettings } from "@/lib/config/settings";
 
 export type CurrentUser = {
   id: string;
-  username: string;
-  mustChangePassword: boolean;
+  name: string;
+  email: string;
   settings: UserSettings;
 };
 
@@ -26,23 +26,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   return {
     id: row.id,
-    username: row.username,
-    mustChangePassword: row.mustChangePassword,
+    name: row.name,
+    email: row.email,
     settings: mergeSettings(row.settings),
   };
 });
 
-/** For pages and actions: redirects to the right place when not allowed. */
+/** For pages and actions: sends anonymous visitors to the login page. */
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.mustChangePassword) redirect("/change-password");
   return user;
 }
 
-/** Like requireUser but allows users who still need to change their password. */
-export async function requireSession(): Promise<CurrentUser> {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  return user;
+/** First name for greetings ("Seif" from "Seif Karkad"). */
+export function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] || name;
 }

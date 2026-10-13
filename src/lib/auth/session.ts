@@ -1,12 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export const SESSION_COOKIE = "ledger_session";
-export const SESSION_DAYS = 14;
+export const SESSION_DAYS = 30;
 
 export type SessionPayload = {
   userId: string;
-  username: string;
-  mustChangePassword: boolean;
+  name: string;
 };
 
 function secretKey() {
@@ -30,11 +29,7 @@ export async function decryptSession(token: string | undefined | null): Promise<
   try {
     const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
     if (typeof payload.userId !== "string") return null;
-    return {
-      userId: payload.userId,
-      username: String(payload.username ?? ""),
-      mustChangePassword: Boolean(payload.mustChangePassword),
-    };
+    return { userId: payload.userId, name: String(payload.name ?? "") };
   } catch {
     return null;
   }

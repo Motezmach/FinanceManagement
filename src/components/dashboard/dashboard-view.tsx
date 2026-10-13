@@ -30,12 +30,12 @@ function greeting() {
 export function DashboardView({
   data,
   period,
-  username,
+  name,
   welcome,
 }: {
   data: Dashboard;
   period: string;
-  username: string;
+  name: string;
   welcome?: boolean;
 }) {
   const { openAdd } = useEntryModal();
@@ -83,8 +83,12 @@ export function DashboardView({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 rounded-xl2 border border-inflow/40 bg-inflow-soft px-4 py-3 text-[13.5px] text-inflow-ink"
         >
-          <Sparkles className="h-4 w-4" />
-          Password updated. You are all set. Press <kbd className="rounded bg-white/60 px-1.5 font-sans text-[11px] text-ink">N</kbd> anytime to add an entry.
+          <Sparkles className="h-4 w-4 shrink-0" />
+          <span>
+            Welcome aboard, {name}. Your ledger is ready with a starter set of categories. Press{" "}
+            <kbd className="rounded bg-white/60 px-1.5 font-sans text-[11px] text-ink">N</kbd> anytime to add an entry,
+            and start with what is in your wallet.
+          </span>
         </motion.div>
       ) : null}
 
@@ -97,7 +101,7 @@ export function DashboardView({
           />
           <CardBody className="relative p-6 sm:p-7">
             <p className="text-[13px] text-ink-3">
-              {greeting()}, <span className="font-medium text-ink-2">{username}</span> · {formatLongDate(today)}
+              {greeting()}, <span className="font-medium text-ink-2">{name}</span> · {formatLongDate(today)}
             </p>
             <p className="mt-5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-3">Balance</p>
             <Money

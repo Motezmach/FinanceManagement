@@ -42,19 +42,52 @@ export const ruleSchema = z.object({
 });
 export type RuleInput = z.infer<typeof ruleSchema>;
 
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "Enter your email")
+  .max(120)
+  .email("Enter a valid email address");
+
+const passwordSchema = z
+  .string()
+  .min(8, "Use at least 8 characters")
+  .max(128, "That is too long")
+  .refine((v) => /[a-zA-Z]/.test(v) && /\d/.test(v), "Mix letters and numbers");
+
+export const nameSchema = z
+  .string()
+  .trim()
+  .min(2, "Tell us your name")
+  .max(60, "Keep it under 60 characters");
+
 export const loginSchema = z.object({
-  username: z.string().trim().min(1, "Enter your username"),
+  email: emailSchema,
   password: z.string().min(1, "Enter your password"),
+});
+
+export const registerSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+
+export const profileSchema = z.object({
+  name: nameSchema,
+  email: emailSchema,
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Enter your current password"),
-    newPassword: z
-      .string()
-      .min(8, "Use at least 8 characters")
-      .max(128)
-      .refine((v) => /[a-zA-Z]/.test(v) && /\d/.test(v), "Mix letters and numbers"),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((v) => v.newPassword === v.confirmPassword, {

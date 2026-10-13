@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/lib/auth/current-user";
+import { firstName, requireUser } from "@/lib/auth/current-user";
 import { getDashboard } from "@/lib/queries/dashboard";
 import { ensureMaterialized } from "@/lib/queries/rules";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
@@ -25,11 +25,11 @@ export default async function DashboardPage({
     <>
       <PageHeader
         eyebrow="Overview"
-        title="Your ledger at a glance"
+        title={`Hello, ${firstName(user.name)}`}
         actions={<MonthPicker period={period} />}
         className="mb-5"
       />
-      <DashboardView data={data} period={period} username={user.username} welcome={sp.welcome === "1"} />
+      <DashboardView data={data} period={period} name={firstName(user.name)} welcome={sp.welcome === "1"} />
     </>
   );
 }

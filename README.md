@@ -15,13 +15,14 @@ npm run db:push              # creates the tables in Neon
 npm run dev                  # http://localhost:3000
 ```
 
-Sign in with `INITIAL_USERNAME` / `INITIAL_PASSWORD` from `.env.local`. The first account is created automatically
-on the first login and you are forced to pick a new password before seeing the dashboard.
+Open `/register`, create an account (name, email, password) and you land on your own dashboard with a starter set of
+categories. Every account has its own categories, entries and rules. Set `DISABLE_REGISTRATION=true` once everyone
+who needs an account has one.
 
 ## Deploy to Vercel
 
 1. Push this folder to a Git repository and import it in Vercel.
-2. Add the environment variables from `.env.example` (`DATABASE_URL`, `AUTH_SECRET`, `INITIAL_USERNAME`, `INITIAL_PASSWORD`).
+2. Add the environment variables from `.env.example` (`DATABASE_URL`, `AUTH_SECRET`, optionally `DISABLE_REGISTRATION`).
 3. Run `npm run db:push` once from your machine against the same `DATABASE_URL` (or let a previous local run do it).
 4. Deploy. Everything is server-rendered on demand; no extra config needed.
 
@@ -67,21 +68,20 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 | `npm run build` / `npm start` | Production build and serve |
 | `npm run db:push` | Sync the Drizzle schema to the database |
 | `npm run db:studio` | Browse the database with Drizzle Studio |
-| `npm run db:seed` | Manually create the first user (optional, login does it too) |
 | `npm run lint` | ESLint |
 
 ## Project layout
 
 ```
 src/
-  app/            routes: (auth)/login, (auth)/change-password, (app)/dashboard, debits, credits,
+  app/            routes: (auth)/login, (auth)/register, (app)/dashboard, debits, credits,
                   calendar, categories, categories/[id], analytics, settings
   components/     ui primitives, layout shell, entry wizard, charts, calendar, categories, dashboard
   lib/
-    actions/      server actions (auth, entries, categories, rules, settings)
-    queries/      read models (dashboard, analytics, calendar, categories, entries, rules)
-    auth/         session cookie (jose), password hashing (bcryptjs), bootstrap
+    actions/      server actions (auth: register/login/profile/password, entries, categories, rules, settings)
+    queries/      read models (dashboard, analytics, calendar, categories, entries, rules), all scoped by user id
+    auth/         session cookie (jose), password hashing (bcryptjs), onboarding (default categories)
     config/       buckets, palette, icons, default categories, settings
     db/           drizzle schema + client
-  proxy.ts        route guard (login / forced password change)
+  proxy.ts        route guard (anonymous → /login, signed in → away from auth pages)
 ```

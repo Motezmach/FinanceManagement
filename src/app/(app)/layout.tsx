@@ -12,7 +12,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SettingsProvider settings={user.settings}>
       <EntryModalProvider categories={categories}>
-        <AppShell username={user.username}>{children}</AppShell>
+        <AppShell name={user.name} email={user.email}>
+          {children}
+        </AppShell>
       </EntryModalProvider>
     </SettingsProvider>
   );

@@ -74,7 +74,7 @@ function ThemeToggle() {
   );
 }
 
-export function AppShell({ username, children }: { username: string; children: ReactNode }) {
+export function AppShell({ name, email, children }: { name: string; email: string; children: ReactNode }) {
   const pathname = usePathname();
   const { openAdd } = useEntryModal();
   const { kindLabel } = useFormat();
@@ -129,12 +129,14 @@ export function AppShell({ username, children }: { username: string; children: R
           <ThemeToggle />
           <div className="flex items-center justify-between rounded-xl border border-line bg-surface px-3 py-2">
             <Link href="/settings" className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-[12px] font-semibold uppercase text-accent-ink">
-                {username.slice(0, 1)}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[12px] font-semibold uppercase text-accent-ink">
+                {name.trim().slice(0, 1)}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[13px] font-medium text-ink">{username}</span>
-                <span className="block text-[11px] text-ink-3">Settings</span>
+                <span className="block truncate text-[13px] font-medium text-ink">{name}</span>
+                <span className="block truncate text-[11px] text-ink-3" title={email}>
+                  {email}
+                </span>
               </span>
             </Link>
             <div className="flex items-center gap-0.5">
