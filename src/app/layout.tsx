@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
+import { headers } from "next/headers";
 import { Toaster } from "sonner";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -23,8 +24,10 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const [user, headerStore] = await Promise.all([getCurrentUser(), headers()]);
   const theme = user?.settings.theme ?? "system";
+  // The proxy issues a per-request nonce; the CSP only allows inline scripts that carry it.
+  const nonce = headerStore.get("x-nonce") ?? undefined;
   const bootScript = `(function(){try{var t=${JSON.stringify(theme)};var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`;
 
   return (
@@ -34,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${inter.variable} ${display.variable} h-full ${theme === "dark" ? "dark" : ""}`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: bootScript }} />
       </head>
       <body className="min-h-full">
         <ThemeProvider initial={theme}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { updateProfile, type AuthState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Field, Input } from "@/components/ui/field";
 
 export function ProfileForm({ name, email }: { name: string; email: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(updateProfile, {});
+  const [draftEmail, setDraftEmail] = useState(email);
+  const emailChanged = draftEmail.trim().toLowerCase() !== email;
 
   useEffect(() => {
     if (state.success) toast.success("Profile saved");
@@ -23,9 +25,29 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
           <Input id="profile-name" name="name" defaultValue={name} autoComplete="name" required maxLength={60} invalid={!!state.fields?.name} />
         </Field>
         <Field label="Email" error={state.fields?.email} htmlFor="profile-email" hint="You sign in with this.">
-          <Input id="profile-email" name="email" type="email" defaultValue={email} autoComplete="email" required maxLength={120} invalid={!!state.fields?.email} />
+          <Input
+            id="profile-email"
+            name="email"
+            type="email"
+            value={draftEmail}
+            onChange={(e) => setDraftEmail(e.target.value)}
+            autoComplete="email"
+            required
+            maxLength={120}
+            invalid={!!state.fields?.email}
+          />
         </Field>
       </div>
+      {emailChanged ? (
+        <Field
+          label="Current password"
+          error={state.fields?.currentPassword}
+          htmlFor="profile-password"
+          hint="Needed to change the email. Other devices will be signed out."
+        >
+          <Input id="profile-password" name="currentPassword" type="password" autoComplete="current-password" required invalid={!!state.fields?.currentPassword} />
+        </Field>
+      ) : null}
       <div className="flex justify-end">
         <Button type="submit" loading={pending}>
           Save profile

@@ -22,7 +22,7 @@ who needs an account has one.
 ## Deploy to Vercel
 
 1. Push this folder to a Git repository and import it in Vercel.
-2. Add the environment variables from `.env.example` (`DATABASE_URL`, `AUTH_SECRET`, optionally `DISABLE_REGISTRATION`).
+2. Add the environment variables from `.env.example`: `DATABASE_URL` and `AUTH_SECRET` are required; `PASSWORD_PEPPER`, `DATA_ENCRYPTION_KEY` and `DISABLE_REGISTRATION` are optional but recommended (see the Security section).
 3. Run `npm run db:push` once from your machine against the same `DATABASE_URL` (or let a previous local run do it).
 4. Deploy. Everything is server-rendered on demand; no extra config needed.
 
@@ -31,6 +31,22 @@ Generate a fresh `AUTH_SECRET` with:
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
+
+## Security
+
+| Threat | What the app does |
+| --- | --- |
+| Brute force / credential stuffing | Database-backed rate limits with lockouts: 10 attempts per account and 30 per IP every 15 minutes, 5 sign-ups per IP per hour, 6 two-factor tries per 10 minutes. State lives in Postgres, so it survives serverless cold starts and spans instances. |
+| Account enumeration | One generic sign-in error. Unknown emails run a bcrypt compare against a throwaway hash, so timing is identical. Lockout keys are HMAC hashes of the email whether or not it exists. |
+| Password cracking after a database leak | bcrypt with 2^12 rounds; optional `PASSWORD_PEPPER` HMAC applied before hashing so the database alone is not enough. Common, keyboard-pattern and name/email-based passwords are rejected. |
+| Session hijacking | Signed JWT in an `httpOnly`, `Secure`, `SameSite=Lax`, `__Host-` cookie. Sessions carry a version: changing the password, changing the email or "Sign out of other devices" bumps it and every other device is out. Sliding expiry re-signs active sessions; abandoned ones expire after 14 days. |
+| Phishing / stolen password | Optional two-factor authentication (TOTP, any authenticator app) with one-period drift, replay protection and eight one-time recovery codes. 2FA secrets are AES-256-GCM encrypted at rest; recovery codes are stored hashed. Turning 2FA off requires the password and a current code. |
+| XSS / injection / clickjacking | Nonce-based Content Security Policy with `strict-dynamic`, `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`, HSTS, referrer and permissions policies, no `x-powered-by`. All SQL is parameterised through Drizzle; all input is validated with zod; React escapes output. |
+| Bots on the sign-up form | Honeypot field plus the per-IP limit. Set `DISABLE_REGISTRATION=true` to close sign-ups entirely. |
+| Silent takeover | Settings shows recent activity: sign-ins, failed attempts, lockouts, password and email changes, 2FA changes. Addresses are stored masked (`1.2.x.x`). |
+| Leaking internals | Error boundary shows a friendly page and a reference id, never a stack trace. Non-action helpers are kept out of `"use server"` modules so nothing extra is exposed as an endpoint. |
+
+Known limits: there is no "forgot password" flow because the app sends no email. Keep your recovery codes safe, or add an email provider and a reset flow if you need one.
 
 ## How the model works
 

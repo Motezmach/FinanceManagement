@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { register, type AuthState } from "@/lib/actions/auth";
+import { passwordWeakness } from "@/lib/security/passwords";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
@@ -11,17 +12,28 @@ const RULES = [
   { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
   { label: "Contains a letter", test: (v: string) => /[a-zA-Z]/.test(v) },
   { label: "Contains a number", test: (v: string) => /\d/.test(v) },
+  { label: "12+ is even better", test: (v: string) => v.length >= 12 },
 ];
 
 export function RegisterForm() {
   const [state, action, pending] = useActionState<AuthState, FormData>(register, {});
   const [password, setPassword] = useState("");
+  const [name, setName] = useState(state.values?.name ?? "");
+  const [email, setEmail] = useState(state.values?.email ?? "");
+  const weak = password.length >= 8 ? passwordWeakness(password, { email, name }) : null;
 
   return (
     <form action={action} className="space-y-4">
       {state.error ? (
         <p className="rounded-xl border border-danger/40 bg-danger-soft px-3 py-2 text-[13px] text-danger-ink">{state.error}</p>
       ) : null}
+
+      {/* Honeypot: hidden from people, irresistible to bots. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden">
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
+
       <Field label="Your name" error={state.fields?.name} htmlFor="name">
         <Input
           id="name"
@@ -31,7 +43,8 @@ export function RegisterForm() {
           required
           maxLength={60}
           placeholder="e.g. Seif"
-          defaultValue={state.values?.name}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           invalid={!!state.fields?.name}
         />
       </Field>
@@ -44,11 +57,12 @@ export function RegisterForm() {
           required
           maxLength={120}
           placeholder="you@example.com"
-          defaultValue={state.values?.email}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           invalid={!!state.fields?.email}
         />
       </Field>
-      <Field label="Password" error={state.fields?.password} htmlFor="password">
+      <Field label="Password" error={state.fields?.password ?? weak ?? undefined} htmlFor="password">
         <Input
           id="password"
           name="password"
@@ -56,7 +70,8 @@ export function RegisterForm() {
           autoComplete="new-password"
           required
           minLength={8}
-          invalid={!!state.fields?.password}
+          maxLength={128}
+          invalid={!!state.fields?.password || !!weak}
           onChange={(e) => setPassword(e.target.value)}
         />
         <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
@@ -74,7 +89,7 @@ export function RegisterForm() {
         </ul>
       </Field>
       <Field label="Confirm password" error={state.fields?.confirmPassword} htmlFor="confirmPassword">
-        <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} invalid={!!state.fields?.confirmPassword} />
+        <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={128} invalid={!!state.fields?.confirmPassword} />
       </Field>
       <Button type="submit" size="lg" className="w-full" loading={pending}>
         Create my ledger <ArrowRight className="h-4 w-4" />

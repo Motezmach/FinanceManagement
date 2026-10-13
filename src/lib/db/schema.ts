@@ -37,10 +37,55 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(), // stored lowercased
   passwordHash: text("password_hash").notNull(),
+  // Bumped to invalidate every existing session (password change, "sign out everywhere").
+  sessionVersion: integer("session_version").notNull().default(1),
+  // Two-factor authentication (TOTP). Secrets are encrypted at rest.
+  totpEnabled: boolean("totp_enabled").notNull().default(false),
+  totpSecretEnc: text("totp_secret_enc"),
+  totpPendingSecretEnc: text("totp_pending_secret_enc"),
+  totpLastStep: integer("totp_last_step"), // replay protection
   settings: jsonb("settings").$type<Partial<UserSettings>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** One-time recovery codes for accounts with 2FA. Only hashes are stored. */
+export const recoveryCodes = pgTable(
+  "recovery_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("recovery_codes_user_idx").on(t.userId)],
+);
+
+/** Fixed-window counters with lockouts. Keys are HMAC hashes, never raw emails or IPs. */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+});
+
+/** Security-relevant events, shown to the user as "recent activity". */
+export const authEvents = pgTable(
+  "auth_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    ipMasked: text("ip_masked"),
+    userAgent: text("user_agent"),
+    detail: text("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("auth_events_user_created_idx").on(t.userId, t.createdAt)],
+);
 
 export const categories = pgTable(
   "categories",

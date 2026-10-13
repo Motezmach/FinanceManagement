@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { isRegistrationOpen } from "@/lib/actions/auth";
+import { isRegistrationOpen } from "@/lib/security/policy";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = { title: "Create account" };
 
-export default async function RegisterPage() {
-  const open = await isRegistrationOpen();
+export default function RegisterPage() {
+  const open = isRegistrationOpen();
 
   return (
     <div>

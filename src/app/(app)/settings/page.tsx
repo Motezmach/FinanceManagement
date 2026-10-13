@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { LogOut } from "lucide-react";
+import { AlertTriangle, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { logout } from "@/lib/actions/auth";
+import { listAuthEvents } from "@/lib/security/audit";
+import { describeAgent } from "@/lib/security/request";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -9,15 +11,37 @@ import { SettingsForm } from "@/components/settings/settings-form";
 import { LabelsForm } from "@/components/settings/labels-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { TwoFactorCard } from "@/components/settings/two-factor-card";
+import { ActivityCard, SessionsCard } from "@/components/settings/security-cards";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ recovery?: string }> }) {
   const user = await requireUser();
+  const sp = await searchParams;
+  const events = await listAuthEvents(user.id, 12);
+  const activity = events.map((e) => ({
+    id: e.id,
+    type: e.type,
+    ipMasked: e.ipMasked,
+    agent: describeAgent(e.userAgent),
+    createdAt: e.createdAt.toISOString(),
+  }));
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Make it yours" description="Profile, currency, wording, appearance and your password." />
+      <PageHeader eyebrow="Settings" title="Make it yours" description="Profile, security, currency, wording and appearance." />
+
+      {sp.recovery === "1" ? (
+        <div className="mb-5 flex items-start gap-3 rounded-xl2 border border-warn/50 bg-warn-soft px-4 py-3 text-[13.5px] text-warn-ink">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            You signed in with a recovery code. That code is now used up. If you lost your authenticator, turn two-factor off and set it
+            up again on your new device, then generate fresh recovery codes.
+          </span>
+        </div>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <div className="space-y-5">
           <Card>
@@ -48,14 +72,6 @@ export default async function SettingsPage() {
               <LabelsForm settings={user.settings} />
             </CardBody>
           </Card>
-        </div>
-        <div className="space-y-5">
-          <Card>
-            <CardHeader title="Password" description="Pick something only you know." />
-            <CardBody className="pt-4">
-              <PasswordForm />
-            </CardBody>
-          </Card>
           <Card>
             <CardHeader title="How it works" />
             <CardBody className="space-y-3 pt-4 text-[13.5px] leading-relaxed text-ink-2">
@@ -71,12 +87,19 @@ export default async function SettingsPage() {
                 <span className="font-medium text-ink">Fixed monthly rules</span> create a due entry each month. Pausing a rule removes the
                 unpaid instance; paid history always stays.
               </p>
-              <p>
-                Your data is private to your account. Default categories, section behaviours and the color palette live in{" "}
-                <code className="rounded bg-surface-2 px-1 py-0.5 text-[12px]">src/lib/config</code> if you want to go further.
-              </p>
             </CardBody>
           </Card>
+        </div>
+        <div className="space-y-5">
+          <TwoFactorCard enabled={user.totpEnabled} />
+          <Card>
+            <CardHeader title="Password" description="Changing it signs out every other device." />
+            <CardBody className="pt-4">
+              <PasswordForm />
+            </CardBody>
+          </Card>
+          <SessionsCard />
+          <ActivityCard items={activity} />
         </div>
       </div>
     </>

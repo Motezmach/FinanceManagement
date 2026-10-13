@@ -84,6 +84,16 @@ export const profileSchema = z.object({
   email: emailSchema,
 });
 
+/** A 6-digit authenticator code or a recovery code like ABCDE-FGHJK. */
+export const twoFactorCodeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(1, "Enter the code")
+    .max(24)
+    .refine((v) => /^\d{3}\s?\d{3}$/.test(v) || /^[A-Za-z0-9]{5}-?[A-Za-z0-9]{5}$/.test(v), "Enter a 6-digit code or a recovery code"),
+});
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Enter your current password"),
