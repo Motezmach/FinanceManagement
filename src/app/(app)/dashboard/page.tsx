@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { firstName, requireUser } from "@/lib/auth/current-user";
 import { getDashboard } from "@/lib/queries/dashboard";
 import { ensureMaterialized } from "@/lib/queries/rules";
@@ -7,7 +8,10 @@ import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { PageHeader } from "@/components/layout/page-header";
 import { MonthPicker } from "@/components/layout/month-picker";
 
-export const metadata: Metadata = { title: "Overview" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("nav");
+  return { title: t("overview") };
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -17,6 +21,7 @@ export default async function DashboardPage({
   const user = await requireUser();
   const sp = await searchParams;
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
+  const t = await getTranslations("dashboard");
 
   await ensureMaterialized(user.id, period);
   const data = await getDashboard(user.id, period);
@@ -24,8 +29,8 @@ export default async function DashboardPage({
   return (
     <>
       <PageHeader
-        eyebrow="Overview"
-        title={`Hello, ${firstName(user.name)}`}
+        eyebrow={t("eyebrow")}
+        title={t("hello", { name: firstName(user.name) })}
         actions={<MonthPicker period={period} />}
         className="mb-5"
       />

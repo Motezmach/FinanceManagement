@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, entries } from "@/lib/db/schema";
@@ -15,23 +16,25 @@ function refresh() {
 }
 
 async function assertCategory(userId: string, categoryId: string, kind: "debit" | "credit") {
+  const t = await getTranslations("server");
   const [cat] = await db
     .select({ id: categories.id, kind: categories.kind })
     .from(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .limit(1);
-  if (!cat) return "Pick a category";
-  if (cat.kind !== kind) return "That category belongs to the other side of the ledger";
+  if (!cat) return t("pickCategory");
+  if (cat.kind !== kind) return t("categoryOtherSide");
   return null;
 }
 
 export async function createEntry(raw: unknown): Promise<ActionResult<{ id: string }>> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = entrySchema.safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
   const input = parsed.data;
 
-  if (BUCKET_META[input.bucket].kind !== input.kind) return fail("Bucket does not match the kind");
+  if (BUCKET_META[input.bucket].kind !== input.kind) return fail(t("bucketMismatch"));
   const catError = await assertCategory(user.id, input.categoryId, input.kind);
   if (catError) return fail(catError, { categoryId: catError });
 
@@ -55,9 +58,10 @@ export async function createEntry(raw: unknown): Promise<ActionResult<{ id: stri
 }
 
 export async function updateEntry(raw: unknown): Promise<ActionResult> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = entryUpdateSchema.safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
   const { id, ...patch } = parsed.data;
 
   const [existing] = await db
@@ -65,13 +69,13 @@ export async function updateEntry(raw: unknown): Promise<ActionResult> {
     .from(entries)
     .where(and(eq(entries.id, id), eq(entries.userId, user.id)))
     .limit(1);
-  if (!existing) return fail("Entry not found");
+  if (!existing) return fail(t("entryNotFound"));
 
   const kind = patch.kind ?? existing.kind;
   const status = patch.status ?? existing.status;
   let bucket = patch.bucket ?? existing.bucket;
   if (kind === "debit") bucket = debitBucketForStatus(status);
-  if (BUCKET_META[bucket].kind !== kind) return fail("Bucket does not match the kind");
+  if (BUCKET_META[bucket].kind !== kind) return fail(t("bucketMismatch"));
 
   if (patch.categoryId) {
     const catError = await assertCategory(user.id, patch.categoryId, kind);
@@ -103,13 +107,14 @@ export async function updateEntry(raw: unknown): Promise<ActionResult> {
  * potential → pending → wallet.
  */
 export async function setEntryStatus(id: string, status: Status): Promise<ActionResult> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const [existing] = await db
     .select()
     .from(entries)
     .where(and(eq(entries.id, id), eq(entries.userId, user.id)))
     .limit(1);
-  if (!existing) return fail("Entry not found");
+  if (!existing) return fail(t("entryNotFound"));
 
   const bucket = existing.kind === "debit" ? debitBucketForStatus(status) : existing.bucket;
   const date = status === "settled" && existing.status !== "settled" ? todayISO() : existing.date;

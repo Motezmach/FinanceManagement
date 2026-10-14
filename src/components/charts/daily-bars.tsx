@@ -1,10 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useFormat } from "@/components/providers/settings-provider";
 import { KIND_COLORS } from "@/lib/config/palette";
 import { TooltipShell } from "./chart-tooltip";
-import { formatDay } from "@/lib/format";
 
 export function DailyBars({
   data,
@@ -15,16 +15,13 @@ export function DailyBars({
   height?: number;
   todayDay?: number;
 }) {
-  const { money, kindLabel } = useFormat();
+  const { money, kindLabel, day } = useFormat();
+  const t = useTranslations("charts");
   const empty = data.every((d) => d.in === 0 && d.out === 0);
 
   return (
-    <div style={{ height }} className="relative w-full">
-      {empty ? (
-        <p className="absolute inset-0 flex items-center justify-center text-[13px] text-ink-3">
-          Daily activity appears once entries are settled.
-        </p>
-      ) : null}
+    <div style={{ height }} className="relative w-full" dir="ltr">
+      {empty ? <p className="absolute inset-0 flex items-center justify-center text-[13px] text-ink-3">{t("emptyDaily")}</p> : null}
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={1} barCategoryGap="18%" margin={{ top: 6, right: 0, left: 0, bottom: 0 }}>
           <XAxis
@@ -36,14 +33,7 @@ export function DailyBars({
               const v = Number(payload.value);
               const isToday = v === todayDay;
               return (
-                <text
-                  x={Number(x)}
-                  y={Number(y) + 10}
-                  textAnchor="middle"
-                  fontSize={10}
-                  fill={isToday ? "var(--accent)" : "var(--ink-3)"}
-                  fontWeight={isToday ? 600 : 400}
-                >
+                <text x={Number(x)} y={Number(y) + 10} textAnchor="middle" fontSize={10} fill={isToday ? "var(--accent)" : "var(--ink-3)"} fontWeight={isToday ? 600 : 400}>
                   {v % 2 === 1 || isToday ? v : ""}
                 </text>
               );
@@ -56,7 +46,7 @@ export function DailyBars({
               const d = payload[0].payload as (typeof data)[number];
               return (
                 <TooltipShell
-                  title={formatDay(d.date)}
+                  title={day(d.date)}
                   rows={[
                     { label: kindLabel("debit"), value: money(d.in), color: KIND_COLORS.debit.chart },
                     { label: kindLabel("credit"), value: money(d.out), color: KIND_COLORS.credit.chart },

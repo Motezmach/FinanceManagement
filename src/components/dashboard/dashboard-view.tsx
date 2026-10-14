@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarClock, Clock, Plus, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import type { Dashboard } from "@/lib/queries/dashboard";
-import { formatLongDate, formatMonth } from "@/lib/format";
 import { currentPeriod } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -19,12 +19,12 @@ import { MiniCalendar } from "@/components/calendar/mini-calendar";
 import { useEntryModal } from "@/components/providers/entry-modal-provider";
 import { useFormat } from "@/components/providers/settings-provider";
 
-function greeting() {
+function greetingKey() {
   const h = new Date().getHours();
-  if (h < 5) return "Still up";
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 5) return "night" as const;
+  if (h < 12) return "morning" as const;
+  if (h < 18) return "afternoon" as const;
+  return "evening" as const;
 }
 
 export function DashboardView({
@@ -39,37 +39,27 @@ export function DashboardView({
   welcome?: boolean;
 }) {
   const { openAdd } = useEntryModal();
-  const { kindLabel, money } = useFormat();
+  const { kindLabel, money, month, longDate } = useFormat();
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
   const isCurrent = period === currentPeriod();
-  const monthLabel = formatMonth(period);
+  const periodLabel = isCurrent ? tc("thisMonth") : month(period);
   const today = new Date();
 
   const tiles = [
+    { label: t("received", { period: periodLabel }), amount: data.period.received, kind: "debit" as const, icon: ArrowDownLeft, href: "/debits" },
+    { label: t("spent", { period: periodLabel }), amount: data.period.spent, kind: "credit" as const, icon: ArrowUpRight, href: "/credits" },
     {
-      label: `Received · ${isCurrent ? "this month" : monthLabel}`,
-      amount: data.period.received,
-      kind: "debit" as const,
-      icon: ArrowDownLeft,
-      href: "/debits",
-    },
-    {
-      label: `Spent · ${isCurrent ? "this month" : monthLabel}`,
-      amount: data.period.spent,
-      kind: "credit" as const,
-      icon: ArrowUpRight,
-      href: "/credits",
-    },
-    {
-      label: "Pending income",
+      label: t("pendingIncome"),
       amount: data.pendingIn,
-      sub: data.potentialIn ? `+ ${money(data.potentialIn, { compact: true })} potential` : "Work done, not paid yet",
+      sub: data.potentialIn ? t("potentialPlus", { amount: money(data.potentialIn, { compact: true }) }) : t("pendingIncomeSub"),
       icon: Clock,
       href: "/debits",
     },
     {
-      label: "Due & planned",
+      label: t("dueAndPlanned"),
       amount: data.dueOut,
-      sub: data.plannedOut ? `+ ${money(data.plannedOut, { compact: true })} planned` : "Bills waiting to be paid",
+      sub: data.plannedOut ? t("plannedPlus", { amount: money(data.plannedOut, { compact: true }) }) : t("dueAndPlannedSub"),
       icon: CalendarClock,
       href: "/credits",
     },
@@ -85,9 +75,10 @@ export function DashboardView({
         >
           <Sparkles className="h-4 w-4 shrink-0" />
           <span>
-            Welcome aboard, {name}. Your ledger is ready with a starter set of categories. Press{" "}
-            <kbd className="rounded bg-white/60 px-1.5 font-sans text-[11px] text-ink">N</kbd> anytime to add an entry,
-            and start with what is in your wallet.
+            {t.rich("welcome", {
+              name,
+              kbd: (chunks) => <kbd className="rounded bg-white/60 px-1.5 font-sans text-[11px] text-ink">{chunks}</kbd>,
+            })}
           </span>
         </motion.div>
       ) : null}
@@ -96,36 +87,35 @@ export function DashboardView({
       <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <Card className="relative overflow-hidden">
           <div
-            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-60 blur-3xl"
+            className="pointer-events-none absolute -end-24 -top-24 h-64 w-64 rounded-full opacity-60 blur-3xl"
             style={{ background: "var(--accent-soft)" }}
           />
           <CardBody className="relative p-6 sm:p-7">
             <p className="text-[13px] text-ink-3">
-              {greeting()}, <span className="font-medium text-ink-2">{name}</span> · {formatLongDate(today)}
+              <span className="text-ink-2">{t("greetingLine", { greeting: t(`greeting.${greetingKey()}`), name })}</span> · {longDate(today)}
             </p>
-            <p className="mt-5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-3">Balance</p>
+            <p className="mt-5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-3">{t("balance")}</p>
             <Money
               amount={data.balance}
               kind={data.balance < 0 ? "net" : undefined}
-              className="font-display mt-1 block text-[48px] leading-none tracking-tight sm:text-[56px]"
+              className="font-display mt-1 block text-[44px] leading-none sm:text-[52px]"
             />
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
               <span>
-                After pending & due:{" "}
-                <Money amount={data.projected} kind="net" className="font-medium" />
+                {t("afterPending")} <Money amount={data.projected} kind="net" className="font-medium" />
               </span>
               <span className="hidden h-3 w-px bg-line-strong sm:block" />
               <span>
-                Net {isCurrent ? "this month" : monthLabel}:{" "}
+                {isCurrent ? t("netThisMonth") : t("netMonth", { month: month(period) })}{" "}
                 <Money amount={data.period.net} kind="net" className="font-medium" />
               </span>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
               <Button onClick={() => openAdd({ kind: "debit" })}>
-                <ArrowDownLeft className="h-4 w-4" /> Add {kindLabel("debit").toLowerCase()}
+                <ArrowDownLeft className="h-4 w-4" /> {t("addDebit", { label: kindLabel("debit").toLowerCase() })}
               </Button>
               <Button variant="outline" onClick={() => openAdd({ kind: "credit" })}>
-                <ArrowUpRight className="h-4 w-4" /> Add {kindLabel("credit").toLowerCase()}
+                <ArrowUpRight className="h-4 w-4" /> {t("addCredit", { label: kindLabel("credit").toLowerCase() })}
               </Button>
             </div>
           </CardBody>
@@ -133,11 +123,11 @@ export function DashboardView({
 
         <Card>
           <CardHeader
-            title={isCurrent ? "Today" : formatMonth(period)}
-            description={isCurrent ? `${data.todayEntries.length} ${data.todayEntries.length === 1 ? "entry" : "entries"} so far` : "Jump to a day"}
+            title={isCurrent ? t("today") : month(period)}
+            description={isCurrent ? t("todayCount", { count: data.todayEntries.length }) : t("jumpToDay")}
             action={
               <Link href={isCurrent ? "/calendar" : `/calendar?period=${period}`} className="text-[12.5px] text-ink-3 hover:text-ink">
-                Calendar <ArrowRight className="inline h-3 w-3" />
+                {t("calendarLink")} <ArrowRight className="inline h-3 w-3 rtl:-scale-x-100" />
               </Link>
             }
           />
@@ -157,7 +147,7 @@ export function DashboardView({
                     onClick={() => openAdd()}
                     className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line py-3 text-[13px] text-ink-3 transition hover:border-line-strong hover:text-ink"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Nothing logged today. Add something
+                    <Plus className="h-3.5 w-3.5" /> {t("nothingToday")}
                   </button>
                 )}
               </div>
@@ -168,15 +158,15 @@ export function DashboardView({
 
       {/* KPI tiles */}
       <section className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {tiles.map((t) => (
-          <Link key={t.label} href={t.href} className="group">
+        {tiles.map((tile) => (
+          <Link key={tile.label} href={tile.href} className="group">
             <Card className="h-full px-5 py-4 transition group-hover:-translate-y-0.5 group-hover:shadow-pop">
               <div className="flex items-center justify-between">
-                <p className="text-[12.5px] font-medium text-ink-3">{t.label}</p>
-                <t.icon className={cn("h-4 w-4", t.kind === "debit" ? "text-inflow" : t.kind === "credit" ? "text-outflow" : "text-ink-3")} />
+                <p className="text-[12.5px] font-medium text-ink-3">{tile.label}</p>
+                <tile.icon className={cn("h-4 w-4", tile.kind === "debit" ? "text-inflow" : tile.kind === "credit" ? "text-outflow" : "text-ink-3")} />
               </div>
-              <Money amount={t.amount} kind={t.kind} className="font-display mt-2 block text-[28px] leading-none tracking-tight" />
-              {t.sub ? <p className="mt-1.5 text-[12px] text-ink-3">{t.sub}</p> : <p className="mt-1.5 text-[12px] text-ink-3">&nbsp;</p>}
+              <Money amount={tile.amount} kind={tile.kind} className="font-display mt-2 block text-[26px] leading-none" />
+              <p className="mt-1.5 text-[12px] text-ink-3">{tile.sub ?? " "}</p>
             </Card>
           </Link>
         ))}
@@ -185,7 +175,7 @@ export function DashboardView({
       {/* Charts */}
       <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card>
-          <CardHeader title="In vs out" description="Settled amounts over the last six months." />
+          <CardHeader title={t("inVsOut")} description={t("inVsOutSub")} />
           <CardBody className="pt-4">
             <TrendChart data={data.series} />
             <div className="mt-2 flex items-center gap-4 text-[12px] text-ink-3">
@@ -200,11 +190,11 @@ export function DashboardView({
         </Card>
         <Card>
           <CardHeader
-            title="Where it went"
-            description={`${kindLabel("credit")} by category · ${isCurrent ? "this month" : monthLabel}`}
+            title={t("whereItWent")}
+            description={t("whereItWentSub", { label: kindLabel("credit"), period: periodLabel })}
             action={
               <Link href="/analytics" className="text-[12.5px] text-ink-3 hover:text-ink">
-                Analytics <ArrowRight className="inline h-3 w-3" />
+                {t("analyticsLink")} <ArrowRight className="inline h-3 w-3 rtl:-scale-x-100" />
               </Link>
             }
           />
@@ -217,24 +207,24 @@ export function DashboardView({
       {/* Lists */}
       <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card>
-          <CardHeader title="Recent entries" description="Latest additions across the ledger." />
+          <CardHeader title={t("recent")} description={t("recentSub")} />
           <CardBody className="pt-4">
             <EntryList
               entries={data.recent}
               groupByDate={false}
               showBucket
-              emptyTitle="Your ledger is empty"
-              emptyDescription="Start by adding what is in your wallet, then log spending as it happens."
+              emptyTitle={t("emptyTitle")}
+              emptyDescription={t("emptySub")}
               emptyAction={
                 <Button size="sm" onClick={() => openAdd({ kind: "debit", bucket: "wallet" })}>
-                  <Plus className="h-3.5 w-3.5" /> Add wallet balance
+                  <Plus className="h-3.5 w-3.5" /> {t("addWallet")}
                 </Button>
               }
             />
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Coming up" description="Pending items in the next two weeks." />
+          <CardHeader title={t("comingUp")} description={t("comingUpSub")} />
           <CardBody className="pt-4">
             {data.upcoming.length ? (
               <div className="-mx-2">
@@ -244,8 +234,8 @@ export function DashboardView({
               </div>
             ) : (
               <div className="flex flex-col items-center py-6 text-center">
-                <Badge tone="inflow">All clear</Badge>
-                <p className="mt-2 text-[13px] text-ink-3">Nothing due or expected in the next 14 days.</p>
+                <Badge tone="inflow">{t("allClear")}</Badge>
+                <p className="mt-2 text-[13px] text-ink-3">{t("allClearSub")}</p>
               </div>
             )}
           </CardBody>

@@ -26,6 +26,34 @@ export function maskIp(ip: string): string {
   return "unknown";
 }
 
+/** Browser and OS names from a user agent string, for the UI to phrase in its own language. */
+export function parseAgent(ua: string | null | undefined): { browser: string | null; os: string | null } {
+  if (!ua) return { browser: null, os: null };
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\//.test(ua)
+      ? "Opera"
+      : /Chrome\//.test(ua)
+        ? "Chrome"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : "Browser";
+  const os = /Windows/.test(ua)
+    ? "Windows"
+    : /Android/.test(ua)
+      ? "Android"
+      : /iPhone|iPad/.test(ua)
+        ? "iOS"
+        : /Mac OS/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : null;
+  return { browser, os };
+}
+
 /** Short human label for a user agent string. */
 export function describeAgent(ua: string | null | undefined): string {
   if (!ua) return "Unknown device";

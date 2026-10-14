@@ -1,22 +1,27 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowRight, Check } from "lucide-react";
 import { register, type AuthState } from "@/lib/actions/auth";
 import { passwordWeakness } from "@/lib/security/passwords";
+import { isMessageKey } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 const RULES = [
-  { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
-  { label: "Contains a letter", test: (v: string) => /[a-zA-Z]/.test(v) },
-  { label: "Contains a number", test: (v: string) => /\d/.test(v) },
-  { label: "12+ is even better", test: (v: string) => v.length >= 12 },
+  { key: "length" as const, test: (v: string) => v.length >= 8 },
+  { key: "letter" as const, test: (v: string) => /[a-zA-Z]/.test(v) },
+  { key: "number" as const, test: (v: string) => /\d/.test(v) },
+  { key: "longer" as const, test: (v: string) => v.length >= 12 },
 ];
 
 export function RegisterForm() {
   const [state, action, pending] = useActionState<AuthState, FormData>(register, {});
+  const t = useTranslations("auth.register");
+  const tAll = useTranslations();
+  const tv = (m?: string | null) => (isMessageKey(m) ? tAll(m) : (m ?? undefined));
   const [password, setPassword] = useState("");
   const [name, setName] = useState(state.values?.name ?? "");
   const [email, setEmail] = useState(state.values?.email ?? "");
@@ -29,12 +34,12 @@ export function RegisterForm() {
       ) : null}
 
       {/* Honeypot: hidden from people, irresistible to bots. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden">
+      <div aria-hidden="true" className="absolute -start-[9999px] top-0 h-0 w-0 overflow-hidden">
         <label htmlFor="website">Website</label>
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
-      <Field label="Your name" error={state.fields?.name} htmlFor="name">
+      <Field label={t("name")} error={tv(state.fields?.name)} htmlFor="name">
         <Input
           id="name"
           name="name"
@@ -42,13 +47,13 @@ export function RegisterForm() {
           autoFocus
           required
           maxLength={60}
-          placeholder="e.g. Seif"
+          placeholder={t("namePlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           invalid={!!state.fields?.name}
         />
       </Field>
-      <Field label="Email" error={state.fields?.email} htmlFor="email">
+      <Field label={t("email")} error={tv(state.fields?.email)} htmlFor="email">
         <Input
           id="email"
           name="email"
@@ -56,13 +61,14 @@ export function RegisterForm() {
           autoComplete="email"
           required
           maxLength={120}
+          dir="ltr"
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           invalid={!!state.fields?.email}
         />
       </Field>
-      <Field label="Password" error={state.fields?.password ?? weak ?? undefined} htmlFor="password">
+      <Field label={t("password")} error={tv(state.fields?.password) ?? tv(weak)} htmlFor="password">
         <Input
           id="password"
           name="password"
@@ -78,21 +84,21 @@ export function RegisterForm() {
           {RULES.map((r) => {
             const ok = r.test(password);
             return (
-              <li key={r.label} className={cn("flex items-center gap-1 text-[12px] transition-colors", ok ? "text-inflow-ink" : "text-ink-3")}>
+              <li key={r.key} className={cn("flex items-center gap-1 text-[12px] transition-colors", ok ? "text-inflow-ink" : "text-ink-3")}>
                 <span className={cn("flex h-3.5 w-3.5 items-center justify-center rounded-full border", ok ? "border-inflow bg-inflow text-white" : "border-line-strong")}>
                   {ok ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : null}
                 </span>
-                {r.label}
+                {t(`rules.${r.key}`)}
               </li>
             );
           })}
         </ul>
       </Field>
-      <Field label="Confirm password" error={state.fields?.confirmPassword} htmlFor="confirmPassword">
+      <Field label={t("confirm")} error={tv(state.fields?.confirmPassword)} htmlFor="confirmPassword">
         <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={128} invalid={!!state.fields?.confirmPassword} />
       </Field>
       <Button type="submit" size="lg" className="w-full" loading={pending}>
-        Create my ledger <ArrowRight className="h-4 w-4" />
+        {t("submit")} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
       </Button>
     </form>
   );

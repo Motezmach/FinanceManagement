@@ -32,6 +32,16 @@ Generate a fresh `AUTH_SECRET` with:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
+## Languages and typography
+
+The interface ships in **English** (default), **French** and **Arabic**, with Arabic laid out right-to-left. Visitors pick a
+language on the sign-in pages (remembered in a cookie); signed-in users choose it in Settings and it follows their account
+across devices. Message catalogs live in `src/messages/{en,fr,ar}.json` with identical keys. To add a language, add a
+catalog, register the code in `src/lib/i18n/locales.ts`, and map its date-fns locale in `src/lib/format.ts`.
+
+Text is set in IBM Plex Sans, with IBM Plex Sans Arabic for Arabic glyphs; both load through `next/font` so nothing is
+fetched from third parties at runtime.
+
 ## Security
 
 | Threat | What the app does |

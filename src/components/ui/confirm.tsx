@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 import { Dialog } from "./dialog";
 import { Button } from "./button";
@@ -11,7 +12,7 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = "Delete",
+  confirmLabel,
   tone = "danger",
 }: {
   open: boolean;
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   confirmLabel?: string;
   tone?: "danger" | "primary";
 }) {
+  const t = useTranslations("common");
   const [busy, setBusy] = useState(false);
   return (
     <Dialog open={open} onClose={onClose} size="sm" hideClose>
@@ -37,7 +39,7 @@ export function ConfirmDialog({
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             variant={tone === "danger" ? "danger" : "primary"}
@@ -53,7 +55,7 @@ export function ConfirmDialog({
               }
             }}
           >
-            {confirmLabel}
+            {confirmLabel ?? t("delete")}
           </Button>
         </div>
       </div>

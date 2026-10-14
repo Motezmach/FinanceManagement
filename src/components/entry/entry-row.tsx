@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Hourglass, Pencil, Repeat, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import type { EntryWithCategory } from "@/lib/queries/entries";
-import { statusLabel, type Status } from "@/lib/config/buckets";
+import type { Status } from "@/lib/config/buckets";
 import { deleteEntry, setEntryStatus } from "@/lib/actions/entries";
-import { formatDay } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/ui/category-chip";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,9 @@ export function EntryRow({
   className?: string;
 }) {
   const { openEdit } = useEntryModal();
-  const { bucketLabel } = useFormat();
+  const { bucketLabel, statusLabel, day } = useFormat();
+  const t = useTranslations("entry");
+  const tc = useTranslations("common");
   const [pending, start] = useTransition();
   const [confirm, setConfirm] = useState(false);
   const isDebit = entry.kind === "debit";
@@ -42,33 +44,42 @@ export function EntryRow({
       else toast.success(label);
     });
 
-  const settleLabel = isDebit ? "Mark as received" : "Mark as paid";
+  const settleLabel = isDebit ? t("markReceived") : t("markPaid");
+  const settleToast = isDebit ? t("movedToWallet") : t("markedPaid");
   const items: MenuItem[] = [];
   if (entry.status !== "settled") {
-    items.push({ label: settleLabel, icon: <Check />, onSelect: () => move("settled", isDebit ? "Moved to wallet" : "Marked as paid") });
+    items.push({ label: settleLabel, icon: <Check />, onSelect: () => move("settled", settleToast) });
   }
   if (entry.status === "planned") {
     items.push({
-      label: isDebit ? "Move to pending" : "Mark as due",
+      label: isDebit ? t("moveToPending") : t("markDue"),
       icon: <Hourglass />,
-      onSelect: () => move("pending", isDebit ? "Moved to pending work" : "Marked as due"),
+      onSelect: () => move("pending", isDebit ? t("movedToPending") : t("markedDue")),
     });
   }
   if (entry.status === "settled" && (!isDebit || entry.bucket === "wallet")) {
     items.push({
-      label: isDebit ? "Back to pending" : "Mark as unpaid",
+      label: isDebit ? t("backToPending") : t("markUnpaid"),
       icon: <Undo2 />,
-      onSelect: () => move("pending", isDebit ? "Moved back to pending" : "Marked as unpaid"),
+      onSelect: () => move("pending", isDebit ? t("movedBackPending") : t("markedUnpaid")),
     });
   }
   if (entry.status === "pending" && isDebit) {
-    items.push({ label: "Back to potential", icon: <RotateCcw />, onSelect: () => move("planned", "Moved to potential work") });
+    items.push({ label: t("backToPotential"), icon: <RotateCcw />, onSelect: () => move("planned", t("movedToPotential")) });
   }
-  items.push({ label: "Edit", icon: <Pencil />, onSelect: () => openEdit(entry) });
+  items.push({ label: tc("edit"), icon: <Pencil />, onSelect: () => openEdit(entry) });
   items.push({ type: "separator" });
-  items.push({ label: "Delete", icon: <Trash2 />, tone: "danger", onSelect: () => setConfirm(true) });
+  items.push({ label: tc("delete"), icon: <Trash2 />, tone: "danger", onSelect: () => setConfirm(true) });
 
   const statusTone = entry.status === "settled" ? (isDebit ? "inflow" : "neutral") : entry.status === "pending" ? "warn" : "outline";
+  const meta = [
+    entry.category?.name ?? tc("uncategorized"),
+    showBucket ? bucketLabel(entry.bucket) : null,
+    showDate ? day(entry.date) : null,
+    entry.note || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <>
@@ -84,29 +95,24 @@ export function EntryRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className={cn("truncate font-medium text-ink", compact ? "text-[13px]" : "text-[14px]")}>{entry.title}</p>
-            {entry.ruleId ? <Repeat className="h-3 w-3 shrink-0 text-ink-3" aria-label="Recurring" /> : null}
+            {entry.ruleId ? <Repeat className="h-3 w-3 shrink-0 text-ink-3" aria-label={tc("recurring")} /> : null}
             {entry.status !== "settled" ? (
               <Badge tone={statusTone} className="hidden sm:inline-flex">
                 {statusLabel(entry.status, entry.kind)}
               </Badge>
             ) : null}
           </div>
-          <p className="truncate text-[12px] text-ink-3">
-            {entry.category?.name ?? "Uncategorized"}
-            {showBucket ? ` · ${bucketLabel(entry.bucket)}` : ""}
-            {showDate ? ` · ${formatDay(entry.date)}` : ""}
-            {entry.note ? ` · ${entry.note}` : ""}
-          </p>
+          <p className="truncate text-[12px] text-ink-3">{meta}</p>
         </div>
         <div className="flex items-center gap-1">
           {entry.status !== "settled" ? (
             <button
               type="button"
-              onClick={() => move("settled", isDebit ? "Moved to wallet" : "Marked as paid")}
+              onClick={() => move("settled", settleToast)}
               title={settleLabel}
               className="hidden h-8 items-center gap-1 rounded-lg border border-line bg-surface px-2 text-[12px] font-medium text-ink-2 opacity-0 transition hover:border-inflow hover:text-inflow-ink group-hover:opacity-100 sm:flex"
             >
-              <Check className="h-3.5 w-3.5" /> {isDebit ? "Received" : "Paid"}
+              <Check className="h-3.5 w-3.5" /> {isDebit ? t("received") : t("paid")}
             </button>
           ) : null}
           <Money
@@ -122,16 +128,12 @@ export function EntryRow({
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        title="Delete this entry?"
-        description={
-          <>
-            <span className="font-medium text-ink">{entry.title}</span> will be removed permanently.
-          </>
-        }
+        title={t("deleteTitle")}
+        description={t.rich("deleteBody", { title: entry.title, b: (c) => <span className="font-medium text-ink">{c}</span> })}
         onConfirm={async () => {
           const res = await deleteEntry(entry.id);
           if (!res.ok) toast.error(res.error);
-          else toast.success("Entry deleted");
+          else toast.success(t("deleted"));
         }}
       />
     </>

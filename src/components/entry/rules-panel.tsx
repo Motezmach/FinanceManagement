@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Pause, Pencil, Play, Plus, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Category } from "@/lib/db/schema";
@@ -21,12 +22,6 @@ import { ConfirmDialog } from "@/components/ui/confirm";
 import { ProgressBar } from "@/components/ui/progress";
 import { useFormat } from "@/components/providers/settings-provider";
 
-function ordinal(n: number) {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
 export function RulesPanel({
   rules,
   categories,
@@ -37,6 +32,7 @@ export function RulesPanel({
   period: string;
 }) {
   const { money } = useFormat();
+  const t = useTranslations("rules");
   const [editing, setEditing] = useState<RuleWithInstance | null | "new">(null);
   const active = rules.filter((r) => r.isActive);
   const monthly = active.reduce((a, r) => a + r.amount, 0);
@@ -48,14 +44,12 @@ export function RulesPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="flex items-center gap-2 text-[14px] font-semibold text-ink">
-            <Repeat className="h-4 w-4 text-ink-3" /> Monthly rules
+            <Repeat className="h-4 w-4 text-ink-3" /> {t("title")}
           </h4>
-          <p className="mt-0.5 text-[12.5px] text-ink-3">
-            Each rule creates a due entry every month. Mark it paid when the money leaves.
-          </p>
+          <p className="mt-0.5 text-[12.5px] text-ink-3">{t("subtitle")}</p>
         </div>
         <Button size="sm" onClick={() => setEditing("new")}>
-          <Plus className="h-3.5 w-3.5" /> Add rule
+          <Plus className="h-3.5 w-3.5" /> {t("add")}
         </Button>
       </div>
 
@@ -63,8 +57,11 @@ export function RulesPanel({
         <div className="mt-4">
           <div className="mb-1.5 flex items-center justify-between text-[12.5px]">
             <span className="text-ink-2">
-              Paid <span className="font-medium text-ink">{money(paid)}</span> of{" "}
-              <span className="font-medium text-ink">{money(monthly)}</span> this month
+              {t.rich("progress", {
+                paid: money(paid),
+                total: money(monthly),
+                b: (c) => <span className="font-medium text-ink">{c}</span>,
+              })}
             </span>
             <span className="tabular text-ink-3">{pct}%</span>
           </div>
@@ -73,11 +70,7 @@ export function RulesPanel({
       ) : null}
 
       <ul className="mt-4 divide-y divide-line">
-        {rules.length === 0 ? (
-          <li className="py-6 text-center text-[13px] text-ink-3">
-            No rules yet. Add rent, subscriptions or any bill that repeats every month.
-          </li>
-        ) : null}
+        {rules.length === 0 ? <li className="py-6 text-center text-[13px] text-ink-3">{t("empty")}</li> : null}
         {rules.map((r) => (
           <RuleRow key={r.id} rule={r} onEdit={() => setEditing(r)} />
         ))}
@@ -95,6 +88,8 @@ export function RulesPanel({
 }
 
 function RuleRow({ rule, onEdit }: { rule: RuleWithInstance; onEdit: () => void }) {
+  const t = useTranslations("rules");
+  const tc = useTranslations("common");
   const [pending, start] = useTransition();
   const [confirm, setConfirm] = useState(false);
   const inst = rule.instance;
@@ -103,7 +98,7 @@ function RuleRow({ rule, onEdit }: { rule: RuleWithInstance; onEdit: () => void 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) toast.error(res.error ?? "Something went wrong");
+      if (!res.ok) toast.error(res.error ?? t("somethingWrong"));
       else toast.success(ok);
     });
 
@@ -113,50 +108,50 @@ function RuleRow({ rule, onEdit }: { rule: RuleWithInstance; onEdit: () => void 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-[13.5px] font-medium text-ink">{rule.title}</p>
-          {status === "paid" ? <Badge tone="inflow">Paid</Badge> : null}
-          {status === "due" ? <Badge tone="warn">Due</Badge> : null}
-          {status === "paused" ? <Badge tone="outline">Paused</Badge> : null}
+          {status === "paid" ? <Badge tone="inflow">{t("paid")}</Badge> : null}
+          {status === "due" ? <Badge tone="warn">{t("due")}</Badge> : null}
+          {status === "paused" ? <Badge tone="outline">{t("paused")}</Badge> : null}
         </div>
         <p className="truncate text-[12px] text-ink-3">
-          {rule.category?.name ?? "Uncategorized"} · every {ordinal(rule.dayOfMonth)}
+          {rule.category?.name ?? tc("uncategorized")} · {t("every", { day: rule.dayOfMonth })}
           {rule.note ? ` · ${rule.note}` : ""}
         </p>
       </div>
       {status === "due" && inst ? (
         <button
           type="button"
-          onClick={() => run(() => setEntryStatus(inst.id, "settled"), "Marked as paid")}
+          onClick={() => run(() => setEntryStatus(inst.id, "settled"), t("markedPaid"))}
           className="hidden h-8 items-center gap-1 rounded-lg border border-line bg-surface px-2 text-[12px] font-medium text-ink-2 transition hover:border-inflow hover:text-inflow-ink sm:flex"
         >
-          <Check className="h-3.5 w-3.5" /> Paid
+          <Check className="h-3.5 w-3.5" /> {t("paid")}
         </button>
       ) : null}
       <Money amount={rule.amount} kind="credit" signed className="text-[13.5px] font-medium" />
       <Menu
         items={[
           ...(status === "due" && inst
-            ? [{ label: "Mark as paid", icon: <Check />, onSelect: () => run(() => setEntryStatus(inst.id, "settled"), "Marked as paid") }]
+            ? [{ label: t("markPaid"), icon: <Check />, onSelect: () => run(() => setEntryStatus(inst.id, "settled"), t("markedPaid")) }]
             : []),
           ...(status === "paid" && inst
-            ? [{ label: "Mark as unpaid", icon: <Repeat />, onSelect: () => run(() => setEntryStatus(inst.id, "pending"), "Marked as due") }]
+            ? [{ label: t("markUnpaid"), icon: <Repeat />, onSelect: () => run(() => setEntryStatus(inst.id, "pending"), t("markedDue")) }]
             : []),
-          { label: "Edit rule", icon: <Pencil />, onSelect: onEdit },
+          { label: t("editRule"), icon: <Pencil />, onSelect: onEdit },
           rule.isActive
-            ? { label: "Pause", icon: <Pause />, onSelect: () => run(() => setRuleActive(rule.id, false), "Rule paused") }
-            : { label: "Resume", icon: <Play />, onSelect: () => run(() => setRuleActive(rule.id, true), "Rule resumed") },
+            ? { label: t("pause"), icon: <Pause />, onSelect: () => run(() => setRuleActive(rule.id, false), t("pausedToast")) }
+            : { label: t("resume"), icon: <Play />, onSelect: () => run(() => setRuleActive(rule.id, true), t("resumedToast")) },
           { type: "separator" as const },
-          { label: "Delete rule", icon: <Trash2 />, tone: "danger" as const, onSelect: () => setConfirm(true) },
+          { label: t("deleteRule"), icon: <Trash2 />, tone: "danger" as const, onSelect: () => setConfirm(true) },
         ]}
       />
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        title="Delete this rule?"
-        description="Paid history stays. Unpaid instances are removed and no new ones will be created."
+        title={t("deleteTitle")}
+        description={t("deleteBody")}
         onConfirm={async () => {
           const res = await deleteRule(rule.id);
           if (!res.ok) toast.error(res.error);
-          else toast.success("Rule deleted");
+          else toast.success(t("deletedToast"));
         }}
       />
     </li>
@@ -176,12 +171,10 @@ function RuleDialog({
   rule?: RuleWithInstance;
   period: string;
 }) {
-  const [session, setSession] = useState(0);
-  // Re-mount form state each open.
-  if (open && session === 0) setSession(1);
+  const t = useTranslations("rules");
   return (
-    <Dialog open={open} onClose={() => { onClose(); setSession(0); }} title={rule ? "Edit rule" : "New monthly rule"} description="Repeats every month on the day you choose." size="sm">
-      {open ? <RuleForm key={rule?.id ?? "new"} rule={rule} categories={categories} period={period} onDone={() => { onClose(); setSession(0); }} /> : null}
+    <Dialog open={open} onClose={onClose} title={rule ? t("dialogEdit") : t("dialogNew")} description={t("dialogSub")} size="sm">
+      {open ? <RuleForm key={rule?.id ?? "new"} rule={rule} categories={categories} period={period} onDone={onClose} /> : null}
     </Dialog>
   );
 }
@@ -196,7 +189,9 @@ function RuleForm({
   period: string;
   onDone: () => void;
 }) {
-  const { settings } = useFormat();
+  const { settings, tv } = useFormat();
+  const t = useTranslations("rules");
+  const tc = useTranslations("common");
   const [pending, start] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -222,7 +217,7 @@ function RuleForm({
         toast.error(res.error);
         return;
       }
-      toast.success(rule ? "Rule updated" : "Rule added · due entry created for this month");
+      toast.success(rule ? t("updatedToast") : t("createdToast"));
       onDone();
     });
   };
@@ -235,20 +230,20 @@ function RuleForm({
         submit();
       }}
     >
-      <Field label="Title" error={errors.title}>
-        <Input data-autofocus placeholder="e.g. Rent, Netflix, Gym" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} invalid={!!errors.title} />
+      <Field label={t("titleField")} error={tv(errors.title)}>
+        <Input data-autofocus placeholder={t("titlePlaceholder")} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} invalid={!!errors.title} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label={`Amount (${symbol})`} error={errors.amount}>
-          <Input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} invalid={!!errors.amount} />
+        <Field label={t("amountField", { symbol })} error={tv(errors.amount)}>
+          <Input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0.00" dir="ltr" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} invalid={!!errors.amount} />
         </Field>
-        <Field label="Day of month" error={errors.dayOfMonth} hint="Clamped on short months">
-          <Input type="number" min={1} max={31} value={form.dayOfMonth} onChange={(e) => setForm({ ...form, dayOfMonth: e.target.value })} invalid={!!errors.dayOfMonth} />
+        <Field label={t("dayField")} error={tv(errors.dayOfMonth)} hint={t("dayHint")}>
+          <Input type="number" min={1} max={31} dir="ltr" value={form.dayOfMonth} onChange={(e) => setForm({ ...form, dayOfMonth: e.target.value })} invalid={!!errors.dayOfMonth} />
         </Field>
       </div>
-      <Field label="Category" error={errors.categoryId}>
+      <Field label={t("categoryField")} error={tv(errors.categoryId)}>
         <Select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} invalid={!!errors.categoryId}>
-          <option value="">Choose a category</option>
+          <option value="">{t("chooseCategory")}</option>
           {credits.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -256,15 +251,15 @@ function RuleForm({
           ))}
         </Select>
       </Field>
-      <Field label="Note" error={errors.note}>
-        <Textarea placeholder="Optional" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="min-h-[64px]" />
+      <Field label={t("noteField")} error={tv(errors.note)}>
+        <Textarea placeholder={t("optional")} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="min-h-[64px]" />
       </Field>
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="ghost" onClick={onDone} disabled={pending}>
-          Cancel
+          {tc("cancel")}
         </Button>
         <Button type="submit" loading={pending}>
-          {rule ? "Save rule" : "Create rule"}
+          {rule ? t("saveRule") : t("createRule")}
         </Button>
       </div>
     </form>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -23,35 +24,28 @@ import { logout } from "@/lib/actions/auth";
 import { useEntryModal } from "@/components/providers/entry-modal-provider";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useFormat } from "@/components/providers/settings-provider";
-
-const NAV = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/debits", label: "debit", icon: ArrowDownLeft, dynamic: "debit" as const },
-  { href: "/credits", label: "credit", icon: ArrowUpRight, dynamic: "credit" as const },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/categories", label: "Categories", icon: Shapes },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-];
+import { LanguageSwitcher } from "./language-switcher";
 
 function Brand() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5 px-2">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-fg">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2.2">
           <path d="M4 7h16M4 12h10M4 17h7" strokeLinecap="round" />
         </svg>
       </span>
-      <span className="font-display text-[19px] leading-none tracking-tight text-ink">Ledger</span>
+      <span className="font-display text-[18px] leading-none text-ink">Ledger</span>
     </Link>
   );
 }
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations("nav.theme");
   const opts = [
-    { v: "light" as const, icon: Sun, label: "Light" },
-    { v: "system" as const, icon: Monitor, label: "System" },
-    { v: "dark" as const, icon: Moon, label: "Dark" },
+    { v: "light" as const, icon: Sun, label: t("light") },
+    { v: "system" as const, icon: Monitor, label: t("system") },
+    { v: "dark" as const, icon: Moon, label: t("dark") },
   ];
   return (
     <div className="flex items-center rounded-lg border border-line bg-surface p-0.5">
@@ -78,15 +72,23 @@ export function AppShell({ name, email, children }: { name: string; email: strin
   const pathname = usePathname();
   const { openAdd } = useEntryModal();
   const { kindLabel } = useFormat();
+  const t = useTranslations("nav");
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const items = NAV.map((n) => ({ ...n, label: n.dynamic ? kindLabel(n.dynamic) : n.label }));
+  const items = [
+    { href: "/dashboard", label: t("overview"), icon: LayoutDashboard },
+    { href: "/debits", label: kindLabel("debit"), icon: ArrowDownLeft },
+    { href: "/credits", label: kindLabel("credit"), icon: ArrowUpRight },
+    { href: "/calendar", label: t("calendar"), icon: CalendarDays },
+    { href: "/categories", label: t("categories"), icon: Shapes },
+    { href: "/analytics", label: t("analytics"), icon: BarChart3 },
+  ];
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <div className="flex min-h-dvh">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-[232px] shrink-0 flex-col border-r border-line bg-surface/70 px-3 py-5 backdrop-blur md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-[236px] shrink-0 flex-col border-e border-line bg-surface/70 px-3 py-5 backdrop-blur md:flex">
         <Brand />
         <button
           type="button"
@@ -94,7 +96,7 @@ export function AppShell({ name, email, children }: { name: string; email: strin
           className="group mt-6 flex h-10 items-center justify-between rounded-xl bg-primary px-3.5 text-[13.5px] font-medium text-primary-fg transition hover:opacity-90 active:scale-[0.99]"
         >
           <span className="flex items-center gap-2">
-            <Plus className="h-4 w-4" /> New entry
+            <Plus className="h-4 w-4" /> {t("newEntry")}
           </span>
           <kbd className="rounded-md bg-white/15 px-1.5 py-0.5 font-sans text-[10.5px] text-primary-fg/80">N</kbd>
         </button>
@@ -126,7 +128,10 @@ export function AppShell({ name, email, children }: { name: string; email: strin
         </nav>
 
         <div className="mt-auto flex flex-col gap-3">
-          <ThemeToggle />
+          <div className="flex items-center justify-between gap-2">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
           <div className="flex items-center justify-between rounded-xl border border-line bg-surface px-3 py-2">
             <Link href="/settings" className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[12px] font-semibold uppercase text-accent-ink">
@@ -134,7 +139,7 @@ export function AppShell({ name, email, children }: { name: string; email: strin
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-[13px] font-medium text-ink">{name}</span>
-                <span className="block truncate text-[11px] text-ink-3" title={email}>
+                <span className="block truncate text-[11px] text-ink-3" title={email} dir="ltr">
                   {email}
                 </span>
               </span>
@@ -146,14 +151,15 @@ export function AppShell({ name, email, children }: { name: string; email: strin
                   "rounded-md p-1.5 text-ink-3 transition hover:bg-surface-2 hover:text-ink",
                   isActive("/settings") && "text-accent",
                 )}
-                aria-label="Settings"
+                aria-label={t("settings")}
+                title={t("settings")}
               >
                 <Settings className="h-4 w-4" />
               </Link>
               <button
                 type="button"
-                aria-label="Log out"
-                title="Log out"
+                aria-label={t("logOut")}
+                title={t("logOut")}
                 disabled={loggingOut}
                 onClick={async () => {
                   setLoggingOut(true);
@@ -161,7 +167,7 @@ export function AppShell({ name, email, children }: { name: string; email: strin
                 }}
                 className="rounded-md p-1.5 text-ink-3 transition hover:bg-surface-2 hover:text-ink disabled:opacity-50"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 rtl:-scale-x-100" />
               </button>
             </div>
           </div>
@@ -173,8 +179,9 @@ export function AppShell({ name, email, children }: { name: string; email: strin
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-canvas/80 px-4 backdrop-blur md:hidden">
           <Brand />
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ThemeToggle />
-            <Link href="/settings" aria-label="Settings" className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
+            <Link href="/settings" aria-label={t("settings")} className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">
               <Settings className="h-4.5 w-4.5" />
             </Link>
           </div>
@@ -194,7 +201,7 @@ export function AppShell({ name, email, children }: { name: string; email: strin
               <button
                 type="button"
                 onClick={() => openAdd()}
-                aria-label="New entry"
+                aria-label={t("newEntry")}
                 className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-fg shadow-pop active:scale-95"
               >
                 <Plus className="h-5 w-5" />
@@ -226,7 +233,7 @@ function MobileItem({
       )}
     >
       <item.icon className={cn("h-[18px] w-[18px]", active && "text-accent")} />
-      <span className="truncate max-w-[56px]">{item.label}</span>
+      <span className="max-w-[56px] truncate">{item.label}</span>
     </Link>
   );
 }

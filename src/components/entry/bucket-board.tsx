@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import type { EntryWithCategory } from "@/lib/queries/entries";
 import { BUCKET_META, BUCKETS_BY_KIND, type Bucket, type Kind } from "@/lib/config/buckets";
-import { iconFor } from "@/lib/config/icons";
+import { DynamicIcon } from "@/lib/config/icons";
 import { KIND_COLORS } from "@/lib/config/palette";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,9 @@ export function BucketBoard({
   extra?: Partial<Record<Bucket, ReactNode>>;
 }) {
   const { openAdd } = useEntryModal();
-  const { bucketLabel } = useFormat();
+  const { bucketLabel, bucketDescription, bucketHint } = useFormat();
+  const t = useTranslations("board");
+  const tc = useTranslations("common");
   const [active, setActive] = useState<Bucket>(initialBucket ?? BUCKETS_BY_KIND[kind][0]);
   const section = sections.find((s) => s.bucket === active) ?? sections[0];
   const colors = KIND_COLORS[kind];
@@ -51,11 +54,11 @@ export function BucketBoard({
     <div className="space-y-6">
       {/* Summary */}
       <div className="stagger grid gap-3 sm:grid-cols-3">
-        {summary.map((t) => (
-          <Card key={t.label} className="px-5 py-4">
-            <p className="text-[12.5px] font-medium text-ink-3">{t.label}</p>
-            <Money amount={t.amount} kind={t.kind} className="font-display mt-1 block text-[26px] tracking-tight" />
-            {t.sub ? <p className="mt-0.5 text-[12px] text-ink-3">{t.sub}</p> : null}
+        {summary.map((tile) => (
+          <Card key={tile.label} className="px-5 py-4">
+            <p className="text-[12.5px] font-medium text-ink-3">{tile.label}</p>
+            <Money amount={tile.amount} kind={tile.kind} className="font-display mt-1 block text-[24px] leading-none" />
+            {tile.sub ? <p className="mt-1.5 text-[12px] text-ink-3">{tile.sub}</p> : null}
           </Card>
         ))}
       </div>
@@ -64,7 +67,6 @@ export function BucketBoard({
       <div className="grid gap-3 sm:grid-cols-3">
         {sections.map((s) => {
           const meta = BUCKET_META[s.bucket];
-          const Icon = iconFor(meta.icon);
           const isActive = s.bucket === active;
           return (
             <button
@@ -72,7 +74,7 @@ export function BucketBoard({
               type="button"
               onClick={() => setActive(s.bucket)}
               className={cn(
-                "relative flex items-center gap-3 rounded-xl2 border p-4 text-left transition",
+                "relative flex items-center gap-3 rounded-xl2 border p-4 text-start transition",
                 isActive ? "border-line-strong bg-surface shadow-card" : "border-line bg-surface/60 hover:bg-surface",
               )}
             >
@@ -88,7 +90,7 @@ export function BucketBoard({
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                 style={{ background: colors.bg, color: colors.ink }}
               >
-                <Icon className="h-[18px] w-[18px]" />
+                <DynamicIcon icon={meta.icon} className="h-[18px] w-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
@@ -119,14 +121,10 @@ export function BucketBoard({
             <div className="flex items-start justify-between gap-4 px-5 pt-5">
               <div>
                 <h3 className="text-[15px] font-semibold text-ink">{bucketLabel(section.bucket)}</h3>
-                <p className="mt-0.5 text-[13px] text-ink-3">{BUCKET_META[section.bucket].hint}</p>
+                <p className="mt-0.5 text-[13px] text-ink-3">{bucketHint(section.bucket)}</p>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openAdd({ kind, bucket: section.bucket })}
-              >
-                <Plus className="h-3.5 w-3.5" /> Add
+              <Button size="sm" variant="outline" onClick={() => openAdd({ kind, bucket: section.bucket })}>
+                <Plus className="h-3.5 w-3.5" /> {tc("add")}
               </Button>
             </div>
             {extra?.[section.bucket] ? <div className="px-5 pt-4">{extra[section.bucket]}</div> : null}
@@ -136,11 +134,11 @@ export function BucketBoard({
               ) : null}
               <EntryList
                 entries={section.entries}
-                emptyTitle={section.emptyTitle ?? `No ${bucketLabel(section.bucket).toLowerCase()} entries`}
-                emptyDescription={section.emptyDescription ?? BUCKET_META[section.bucket].description}
+                emptyTitle={section.emptyTitle ?? t("noEntries", { section: bucketLabel(section.bucket).toLowerCase() })}
+                emptyDescription={section.emptyDescription ?? bucketDescription(section.bucket)}
                 emptyAction={
                   <Button size="sm" onClick={() => openAdd({ kind, bucket: section.bucket })}>
-                    <Plus className="h-3.5 w-3.5" /> Add the first one
+                    <Plus className="h-3.5 w-3.5" /> {t("addFirst")}
                   </Button>
                 }
               />

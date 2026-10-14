@@ -4,22 +4,24 @@ import Link from "next/link";
 import { getDay, getDaysInMonth } from "date-fns";
 import type { DayTotals } from "@/lib/queries/dashboard";
 import { currentPeriod, periodToDate } from "@/lib/dates";
+import { weekdayNames } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+import { useFormat } from "@/components/providers/settings-provider";
 
 export function MiniCalendar({ period, days, today }: { period: string; days: DayTotals; today: string }) {
+  const { locale } = useFormat();
   const base = periodToDate(period);
   const total = getDaysInMonth(base);
   const lead = (getDay(base) + 6) % 7;
   const cells: (string | null)[] = Array(lead).fill(null);
   for (let d = 1; d <= total; d++) cells.push(`${period}-${String(d).padStart(2, "0")}`);
   const qs = period === currentPeriod() ? "" : `period=${period}&`;
+  const weekdays = weekdayNames(locale, "narrow");
 
   return (
     <div>
       <div className="grid grid-cols-7 text-center text-[10.5px] font-medium text-ink-3">
-        {WEEKDAYS.map((w, i) => (
+        {weekdays.map((w, i) => (
           <span key={i} className="py-1">
             {w}
           </span>

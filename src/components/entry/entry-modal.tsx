@@ -1,26 +1,20 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { subDays } from "date-fns";
 import type { Category } from "@/lib/db/schema";
-import {
-  BUCKET_META,
-  BUCKETS_BY_KIND,
-  debitBucketForStatus,
-  statusLabel,
-  type Bucket,
-  type Kind,
-  type Status,
-} from "@/lib/config/buckets";
-import { iconFor } from "@/lib/config/icons";
+import { BUCKET_META, BUCKETS_BY_KIND, debitBucketForStatus, type Bucket, type Kind, type Status } from "@/lib/config/buckets";
+import { DynamicIcon } from "@/lib/config/icons";
 import { KIND_COLORS } from "@/lib/config/palette";
-import { todayISO } from "@/lib/dates";
+import { todayISO, toISODate } from "@/lib/dates";
 import { entrySchema, fieldErrors } from "@/lib/validation";
 import { createEntry, updateEntry } from "@/lib/actions/entries";
-import { currencySymbol, formatDay } from "@/lib/format";
+import { currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -29,11 +23,9 @@ import { CategoryIcon } from "@/components/ui/category-chip";
 import { Badge } from "@/components/ui/badge";
 import { useFormat } from "@/components/providers/settings-provider";
 import type { EditableEntry, EntryPreset } from "@/components/providers/entry-modal-provider";
-import { subDays } from "date-fns";
-import { toISODate } from "@/lib/dates";
 
 type Step = 0 | 1 | 2 | 3;
-const STEP_LABELS = ["Type", "Section", "Details", "Review"];
+const STEP_KEYS = ["type", "section", "details", "review"] as const;
 
 type FormState = {
   kind: Kind;
@@ -114,7 +106,11 @@ function Wizard({
   preset?: EntryPreset;
   entry?: EditableEntry;
 }) {
-  const { money, kindLabel, bucketLabel, settings } = useFormat();
+  const { money, kindLabel, kindSub, bucketLabel, bucketDescription, bucketHint, statusLabel, settings, day, tv } = useFormat();
+  const t = useTranslations("entry");
+  const tc = useTranslations("common");
+  const tk = useTranslations("kinds");
+  const ts = useTranslations("status");
   const [step, setStep] = useState<Step>(() => initialStep(preset, entry));
   const [dir, setDir] = useState(1);
   const [form, setForm] = useState<FormState>(() => initialState(preset, entry));
@@ -188,7 +184,7 @@ function Wizard({
         if (res.fields) go(2);
         return;
       }
-      toast.success(isEdit ? "Entry updated" : `${kindLabel(data.kind)} added · ${money(data.amount)}`);
+      toast.success(isEdit ? t("updated") : t("added", { kind: kindLabel(data.kind), amount: money(data.amount) }));
       if (another) {
         setForm((f) => ({ ...f, amount: "", title: "", note: "" }));
         setShowNote(false);
@@ -212,44 +208,46 @@ function Wizard({
     exit: (d: number) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
   };
 
+  const stepHint =
+    step === 0
+      ? t("stepHints.type")
+      : step === 1
+        ? t("stepHints.section", { kind: kindLabel(form.kind).toLowerCase() })
+        : step === 2
+          ? t("stepHints.details")
+          : t("stepHints.review");
+
   return (
     <div className="flex max-h-[92vh] flex-col">
       {/* Header */}
       <div className="border-b border-line px-6 pb-4 pt-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-tight text-ink">
-              {isEdit ? "Edit entry" : "New entry"}
-            </h2>
-            <p className="mt-0.5 text-[13px] text-ink-3">
-              {step === 0 && "Is money coming in or going out?"}
-              {step === 1 && `Which part of your ${kindLabel(form.kind).toLowerCase()} is this?`}
-              {step === 2 && "Amount, category and when."}
-              {step === 3 && "Everything look right?"}
-            </p>
+            <h2 className="text-[18px] font-semibold text-ink">{isEdit ? t("editTitle") : t("newTitle")}</h2>
+            <p className="mt-0.5 text-[13px] text-ink-3">{stepHint}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg px-2 py-1 text-[12.5px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
           >
-            Esc
+            {tc("esc")}
           </button>
         </div>
         {/* Stepper */}
-        <ol className="mt-4 flex items-center gap-2">
-          {STEP_LABELS.map((label, i) => {
+        <ol className="mt-4 flex flex-wrap items-center gap-2">
+          {STEP_KEYS.map((key, i) => {
             const done = i < step;
             const active = i === step;
             const clickable = i < step || (isEdit && i >= 2);
             return (
-              <li key={label} className="flex items-center gap-2">
+              <li key={key} className="flex items-center gap-2">
                 <button
                   type="button"
                   disabled={!clickable}
                   onClick={() => clickable && go(i as Step)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-[12px] font-medium transition",
+                    "flex items-center gap-1.5 rounded-full py-1 pe-2.5 ps-1 text-[12px] font-medium transition",
                     active ? "bg-primary text-primary-fg" : done ? "bg-surface-3 text-ink" : "text-ink-3",
                     clickable && !active && "hover:bg-surface-2",
                   )}
@@ -257,18 +255,14 @@ function Wizard({
                   <span
                     className={cn(
                       "flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px]",
-                      active
-                        ? "bg-white/20"
-                        : done
-                          ? "bg-inflow text-white"
-                          : "border border-line-strong",
+                      active ? "bg-white/20" : done ? "bg-inflow text-white" : "border border-line-strong",
                     )}
                   >
                     {done ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : i + 1}
                   </span>
-                  {label}
+                  {t(`steps.${key}`)}
                 </button>
-                {i < STEP_LABELS.length - 1 ? <span className="h-px w-3 bg-line-strong" /> : null}
+                {i < STEP_KEYS.length - 1 ? <span className="h-px w-3 bg-line-strong" /> : null}
               </li>
             );
           })}
@@ -290,7 +284,6 @@ function Wizard({
             {step === 0 ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {(["debit", "credit"] as Kind[]).map((k) => {
-                  const Icon = iconFor(k === "debit" ? "arrow-down-left" : "arrow-up-right");
                   const c = KIND_COLORS[k];
                   const active = form.kind === k;
                   return (
@@ -299,30 +292,21 @@ function Wizard({
                       type="button"
                       onClick={() => chooseKind(k)}
                       className={cn(
-                        "group flex flex-col items-start gap-3 rounded-xl2 border p-5 text-left transition",
+                        "group flex flex-col items-start gap-3 rounded-xl2 border p-5 text-start transition",
                         "hover:-translate-y-0.5 hover:shadow-card",
                         active ? "border-line-strong bg-surface-2" : "border-line bg-surface",
                       )}
                     >
-                      <span
-                        className="flex h-11 w-11 items-center justify-center rounded-xl"
-                        style={{ background: c.bg, color: c.ink }}
-                      >
-                        <Icon className="h-5 w-5" strokeWidth={2.2} />
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: c.bg, color: c.ink }}>
+                        <DynamicIcon icon={k === "debit" ? "arrow-down-left" : "arrow-up-right"} className="h-5 w-5" strokeWidth={2.2} />
                       </span>
                       <span>
                         <span className="block text-[16px] font-semibold text-ink">{kindLabel(k)}</span>
-                        <span className="block text-[12.5px] text-ink-3">
-                          {k === "debit" ? "Money in" : "Money out"}
-                        </span>
+                        <span className="block text-[12.5px] text-ink-3">{kindSub(k)}</span>
                       </span>
-                      <span className="text-[13px] leading-relaxed text-ink-2">
-                        {k === "debit"
-                          ? "Payments received, work in the pipeline, your wallet."
-                          : "Bills, everyday spending and things you plan to buy."}
-                      </span>
+                      <span className="text-[13px] leading-relaxed text-ink-2">{tk(`${k}.description`)}</span>
                       <span className="mt-auto flex items-center gap-1 text-[12.5px] font-medium text-ink-3 group-hover:text-ink">
-                        Continue <ArrowRight className="h-3.5 w-3.5" />
+                        {tc("continue")} <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" />
                       </span>
                     </button>
                   );
@@ -334,7 +318,6 @@ function Wizard({
               <div className="grid gap-2.5">
                 {BUCKETS_BY_KIND[form.kind].map((b) => {
                   const meta = BUCKET_META[b];
-                  const Icon = iconFor(meta.icon);
                   const active = form.bucket === b;
                   const c = KIND_COLORS[form.kind];
                   return (
@@ -343,27 +326,24 @@ function Wizard({
                       type="button"
                       onClick={() => chooseBucket(b)}
                       className={cn(
-                        "flex items-center gap-4 rounded-xl2 border p-4 text-left transition hover:border-line-strong hover:bg-surface-2",
+                        "flex items-center gap-4 rounded-xl2 border p-4 text-start transition hover:border-line-strong hover:bg-surface-2",
                         active ? "border-line-strong bg-surface-2" : "border-line bg-surface",
                       )}
                     >
-                      <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                        style={{ background: c.bg, color: c.ink }}
-                      >
-                        <Icon className="h-[18px] w-[18px]" />
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: c.bg, color: c.ink }}>
+                        <DynamicIcon icon={meta.icon} className="h-[18px] w-[18px]" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
+                        <span className="flex flex-wrap items-center gap-2">
                           <span className="text-[14.5px] font-semibold text-ink">{bucketLabel(b)}</span>
                           <Badge tone={meta.defaultStatus === "settled" ? "inflow" : meta.defaultStatus === "pending" ? "warn" : "neutral"}>
                             {statusLabel(meta.defaultStatus, form.kind)}
                           </Badge>
                         </span>
-                        <span className="mt-0.5 block text-[13px] text-ink-2">{meta.description}</span>
-                        <span className="block text-[12px] text-ink-3">{meta.hint}</span>
+                        <span className="mt-0.5 block text-[13px] text-ink-2">{bucketDescription(b)}</span>
+                        <span className="block text-[12px] text-ink-3">{bucketHint(b)}</span>
                       </span>
-                      <ArrowRight className="h-4 w-4 shrink-0 text-ink-3" />
+                      <ArrowRight className="h-4 w-4 shrink-0 text-ink-3 rtl:-scale-x-100" />
                     </button>
                   );
                 })}
@@ -390,19 +370,18 @@ function Wizard({
                   >
                     {bucketLabel(form.bucket)}
                   </button>
-                  {isRuleInstance ? (
-                    <span className="text-ink-3">· from a fixed monthly rule</span>
-                  ) : null}
+                  {isRuleInstance ? <span className="text-ink-3">{t("fromRule")}</span> : null}
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="mb-1.5 block text-[13px] font-medium text-ink-2">Amount</label>
+                  <label className="mb-1.5 block text-[13px] font-medium text-ink-2">{t("amount")}</label>
                   <div
                     className={cn(
                       "flex items-center gap-2 rounded-xl2 border bg-surface px-4 transition focus-within:border-accent focus-within:ring-4 focus-within:ring-ring",
                       errors.amount ? "border-danger" : "border-line",
                     )}
+                    dir="ltr"
                   >
                     <span className="text-[22px] font-medium text-ink-3">{symbol}</span>
                     <input
@@ -415,15 +394,15 @@ function Wizard({
                       value={form.amount}
                       onChange={(e) => set("amount", e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && next()}
-                      className="font-display h-16 w-full bg-transparent text-[36px] tracking-tight text-ink outline-none placeholder:text-ink-3/60 tabular"
+                      className="font-display h-16 w-full bg-transparent text-[34px] text-ink outline-none placeholder:text-ink-3/60 tabular"
                     />
                   </div>
-                  {errors.amount ? <p className="mt-1.5 text-[12.5px] text-danger-ink">{errors.amount}</p> : null}
+                  {errors.amount ? <p className="mt-1.5 text-[12.5px] text-danger-ink">{tv(errors.amount)}</p> : null}
                 </div>
 
-                <Field label="Title" error={errors.title}>
+                <Field label={t("title")} error={tv(errors.title)}>
                   <Input
-                    placeholder={form.kind === "debit" ? "e.g. Website redesign for Acme" : "e.g. Groceries at the market"}
+                    placeholder={form.kind === "debit" ? t("titlePlaceholderDebit") : t("titlePlaceholderCredit")}
                     value={form.title}
                     onChange={(e) => set("title", e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && next()}
@@ -435,13 +414,9 @@ function Wizard({
                 {/* Category */}
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
-                    <label className="text-[13px] font-medium text-ink-2">Category</label>
-                    <Link
-                      href="/categories"
-                      onClick={onClose}
-                      className="flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink"
-                    >
-                      <Plus className="h-3 w-3" /> Manage
+                    <label className="text-[13px] font-medium text-ink-2">{t("category")}</label>
+                    <Link href="/categories" onClick={onClose} className="flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink">
+                      <Plus className="h-3 w-3" /> {tc("manage")}
                     </Link>
                   </div>
                   {cats.length ? (
@@ -454,7 +429,7 @@ function Wizard({
                             type="button"
                             onClick={() => set("categoryId", c.id)}
                             className={cn(
-                              "flex items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[13px] transition",
+                              "flex items-center gap-2 rounded-xl border px-2 py-1.5 text-start text-[13px] transition",
                               active
                                 ? "border-accent bg-accent-soft/60 text-ink ring-2 ring-ring"
                                 : "border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink",
@@ -468,19 +443,19 @@ function Wizard({
                     </div>
                   ) : (
                     <p className="rounded-xl border border-dashed border-line px-3 py-3 text-[13px] text-ink-3">
-                      No {kindLabel(form.kind).toLowerCase()} categories yet. Create one in Categories.
+                      {t("noCategories", { kind: kindLabel(form.kind).toLowerCase() })}
                     </p>
                   )}
-                  {errors.categoryId ? <p className="mt-1.5 text-[12.5px] text-danger-ink">{errors.categoryId}</p> : null}
+                  {errors.categoryId ? <p className="mt-1.5 text-[12.5px] text-danger-ink">{tv(errors.categoryId)}</p> : null}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Date" error={errors.date}>
-                    <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} invalid={!!errors.date} />
+                  <Field label={t("date")} error={tv(errors.date)}>
+                    <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} invalid={!!errors.date} dir="ltr" />
                     <div className="mt-1.5 flex gap-1.5">
                       {[
-                        { label: "Today", v: todayISO() },
-                        { label: "Yesterday", v: toISODate(subDays(new Date(), 1)) },
+                        { label: tc("today"), v: todayISO() },
+                        { label: tc("yesterday"), v: toISODate(subDays(new Date(), 1)) },
                       ].map((q) => (
                         <button
                           key={q.label}
@@ -496,7 +471,7 @@ function Wizard({
                       ))}
                     </div>
                   </Field>
-                  <Field label="Status" hint={form.kind === "debit" ? "Moves it between wallet, pending and potential." : undefined}>
+                  <Field label={t("status")} hint={form.kind === "debit" ? t("statusHintDebit") : undefined}>
                     <div className="flex flex-wrap gap-1.5">
                       {statusOptions.map((s) => {
                         const active = form.status === s;
@@ -521,21 +496,12 @@ function Wizard({
                 </div>
 
                 {showNote ? (
-                  <Field label="Note" error={errors.note}>
-                    <Textarea
-                      placeholder="Anything worth remembering about this one"
-                      value={form.note}
-                      onChange={(e) => set("note", e.target.value)}
-                      maxLength={500}
-                    />
+                  <Field label={t("note")} error={tv(errors.note)}>
+                    <Textarea placeholder={t("notePlaceholder")} value={form.note} onChange={(e) => set("note", e.target.value)} maxLength={500} />
                   </Field>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowNote(true)}
-                    className="flex items-center gap-1 text-[13px] text-ink-3 transition hover:text-ink"
-                  >
-                    <ChevronDown className="h-3.5 w-3.5" /> Add a note
+                  <button type="button" onClick={() => setShowNote(true)} className="flex items-center gap-1 text-[13px] text-ink-3 transition hover:text-ink">
+                    <ChevronDown className="h-3.5 w-3.5" /> {t("addNote")}
                   </button>
                 )}
               </div>
@@ -550,43 +516,32 @@ function Wizard({
                       <div>
                         <p className="text-[16px] font-semibold text-ink">{form.title}</p>
                         <p className="text-[13px] text-ink-3">
-                          {category?.name ?? "Uncategorized"} · {formatDay(form.date)}
+                          {category?.name ?? tc("uncategorized")} · {day(form.date)}
                         </p>
                       </div>
                     </div>
-                    <p
-                      className="font-display tabular text-[30px] tracking-tight"
-                      style={{ color: KIND_COLORS[form.kind].ink }}
-                    >
+                    <p className="font-display tabular text-[28px]" style={{ color: KIND_COLORS[form.kind].ink }} dir="ltr">
                       {form.kind === "debit" ? "+" : "−"}
                       {money(Number(form.amount) || 0)}
                     </p>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-3 border-t border-line pt-4 text-[13px]">
                     <div>
-                      <p className="text-ink-3">Type</p>
+                      <p className="text-ink-3">{t("reviewType")}</p>
                       <p className="font-medium text-ink">{kindLabel(form.kind)}</p>
                     </div>
                     <div>
-                      <p className="text-ink-3">Section</p>
+                      <p className="text-ink-3">{t("reviewSection")}</p>
                       <p className="font-medium text-ink">{bucketLabel(form.bucket)}</p>
                     </div>
                     <div>
-                      <p className="text-ink-3">Status</p>
+                      <p className="text-ink-3">{t("reviewStatus")}</p>
                       <p className="font-medium text-ink">{statusLabel(form.status, form.kind)}</p>
                     </div>
                   </div>
-                  {form.note ? (
-                    <p className="mt-3 rounded-lg bg-surface px-3 py-2 text-[13px] text-ink-2">{form.note}</p>
-                  ) : null}
+                  {form.note ? <p className="mt-3 rounded-lg bg-surface px-3 py-2 text-[13px] text-ink-2">{form.note}</p> : null}
                 </div>
-                <p className="text-[12.5px] text-ink-3">
-                  {form.status === "settled"
-                    ? "This counts towards your balance right away."
-                    : form.status === "pending"
-                      ? "Shown as pending until you mark it as settled."
-                      : "Planned items never touch your balance until you settle them."}
-                </p>
+                <p className="text-[12.5px] text-ink-3">{ts(`${form.status}.note`)}</p>
               </div>
             ) : null}
           </motion.div>
@@ -598,25 +553,25 @@ function Wizard({
         <div>
           {step > 0 ? (
             <Button variant="ghost" onClick={() => go((step - 1) as Step)} disabled={pending}>
-              <ArrowLeft className="h-4 w-4" /> Back
+              <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {tc("back")}
             </Button>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
           {step === 2 ? (
             <Button onClick={next}>
-              Review <ArrowRight className="h-4 w-4" />
+              {t("review")} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
             </Button>
           ) : null}
           {step === 3 ? (
             <>
               {!isEdit ? (
                 <Button variant="outline" onClick={() => submit(true)} disabled={pending}>
-                  Save & add another
+                  {t("saveAnother")}
                 </Button>
               ) : null}
               <Button onClick={() => submit(false)} loading={pending}>
-                <Check className="h-4 w-4" /> {isEdit ? "Save changes" : "Save entry"}
+                <Check className="h-4 w-4" /> {isEdit ? t("saveChanges") : t("save")}
               </Button>
             </>
           ) : null}

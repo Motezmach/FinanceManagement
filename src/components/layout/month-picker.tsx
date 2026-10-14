@@ -2,16 +2,19 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { currentPeriod, shiftPeriod } from "@/lib/dates";
-import { formatMonth } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useFormat } from "@/components/providers/settings-provider";
 
 export function MonthPicker({ period, className }: { period: string; className?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, start] = useTransition();
+  const { month } = useFormat();
+  const t = useTranslations("common");
   const isCurrent = period === currentPeriod();
 
   const go = (p: string) => {
@@ -37,16 +40,16 @@ export function MonthPicker({ period, className }: { period: string; className?:
         className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink"
         aria-label="Previous month"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" />
       </button>
       <button
         type="button"
         onClick={() => go(currentPeriod())}
-        className="min-w-[132px] px-2 text-center text-[13.5px] font-medium text-ink"
-        title="Jump to this month"
+        className="min-w-[140px] px-2 text-center text-[13.5px] font-medium text-ink"
+        title={t("today")}
       >
-        {formatMonth(period)}
-        {!isCurrent ? <span className="ml-1.5 text-[11px] text-ink-3">· today</span> : null}
+        {month(period)}
+        {!isCurrent ? <span className="ms-1.5 text-[11px] text-ink-3">· {t("today").toLowerCase()}</span> : null}
       </button>
       <button
         type="button"
@@ -54,7 +57,7 @@ export function MonthPicker({ period, className }: { period: string; className?:
         className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink"
         aria-label="Next month"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-4 w-4 rtl:-scale-x-100" />
       </button>
     </div>
   );

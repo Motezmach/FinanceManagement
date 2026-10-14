@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function Menu({
   align?: "start" | "end";
   className?: string;
 }) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -51,7 +53,7 @@ export function Menu({
           "flex h-8 w-8 items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink",
           open && "bg-surface-2 text-ink",
         )}
-        aria-label="More actions"
+        aria-label={t("moreActions")}
       >
         {trigger ?? <MoreHorizontal className="h-4 w-4" />}
       </button>
@@ -65,7 +67,7 @@ export function Menu({
             transition={{ duration: 0.14 }}
             className={cn(
               "absolute z-40 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-pop",
-              align === "end" ? "right-0" : "left-0",
+              align === "end" ? "end-0" : "start-0",
             )}
           >
             {items.map((item, i) =>

@@ -1,20 +1,21 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Inbox } from "lucide-react";
 import type { EntryWithCategory } from "@/lib/queries/entries";
-import { formatDay } from "@/lib/format";
 import { todayISO } from "@/lib/dates";
 import { EntryRow } from "./entry-row";
 import { EmptyState } from "@/components/ui/empty";
 import { Money } from "@/components/ui/money";
+import { useFormat } from "@/components/providers/settings-provider";
 
 export function EntryList({
   entries,
   groupByDate = true,
   compact,
   showBucket,
-  emptyTitle = "Nothing here yet",
+  emptyTitle,
   emptyDescription,
   emptyAction,
 }: {
@@ -26,11 +27,14 @@ export function EntryList({
   emptyDescription?: string;
   emptyAction?: ReactNode;
 }) {
+  const t = useTranslations();
+  const { day } = useFormat();
+
   if (!entries.length) {
     return (
       <EmptyState
         icon={<Inbox className="h-5 w-5" />}
-        title={emptyTitle}
+        title={emptyTitle ?? t("entry.listEmpty")}
         description={emptyDescription}
         action={emptyAction}
         compact
@@ -66,7 +70,7 @@ export function EntryList({
           <section key={date}>
             <header className="mb-1 flex items-center justify-between px-2">
               <h4 className="text-[12px] font-medium uppercase tracking-wider text-ink-3">
-                {date === today ? "Today" : formatDay(date)}
+                {date === today ? t("common.today") : day(date)}
               </h4>
               {net !== 0 ? <Money amount={net} kind="net" className="text-[12px]" /> : null}
             </header>

@@ -1,6 +1,7 @@
 /**
  * Password hygiene checks shared by the client (live feedback) and the server (enforced).
  * Length and variety are enforced by zod; this catches the obvious bad choices.
+ * Returns a translation key under "validation", or null when the password is fine.
  */
 const COMMON = [
   "password",
@@ -43,32 +44,40 @@ const COMMON = [
   "secret123",
   "changeme1",
   "ledger123",
+  "azerty123",
+  "motdepasse1",
 ];
 
 const COMMON_SET = new Set(COMMON);
 
-const KEYBOARD_RUNS = ["qwertyuiop", "asdfghjkl", "zxcvbnm", "1234567890", "0987654321"];
+const KEYBOARD_RUNS = ["qwertyuiop", "azertyuiop", "asdfghjkl", "zxcvbnm", "1234567890", "0987654321"];
 
-/** Returns a human message when the password is weak, otherwise null. */
+export type PasswordWeakness =
+  | "validation.weakCommon"
+  | "validation.weakRepeat"
+  | "validation.weakPattern"
+  | "validation.weakEmail"
+  | "validation.weakName";
+
 export function passwordWeakness(
   password: string,
   ctx: { email?: string | null; name?: string | null } = {},
-): string | null {
+): PasswordWeakness | null {
   const pw = password.toLowerCase();
-  if (COMMON_SET.has(pw)) return "That password is on every attacker's list. Pick something more personal.";
+  if (COMMON_SET.has(pw)) return "validation.weakCommon";
 
-  if (/^(.)\1+$/.test(pw)) return "Repeating one character is easy to guess.";
+  if (/^(.)\1+$/.test(pw)) return "validation.weakRepeat";
   for (const run of KEYBOARD_RUNS) {
     if (pw.length >= 6 && (run.includes(pw) || run.split("").reverse().join("").includes(pw))) {
-      return "Keyboard patterns are easy to guess.";
+      return "validation.weakPattern";
     }
   }
 
   const local = (ctx.email ?? "").toLowerCase().split("@")[0];
-  if (local.length >= 4 && pw.includes(local)) return "Do not use part of your email in your password.";
+  if (local.length >= 4 && pw.includes(local)) return "validation.weakEmail";
 
   for (const part of (ctx.name ?? "").toLowerCase().split(/\s+/)) {
-    if (part.length >= 4 && pw.includes(part)) return "Do not use your name in your password.";
+    if (part.length >= 4 && pw.includes(part)) return "validation.weakName";
   }
 
   return null;

@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { recoveryCodes, users } from "@/lib/db/schema";
@@ -20,11 +21,13 @@ import {
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { isRegistrationOpen } from "@/lib/security/policy";
 import { getClientInfo } from "@/lib/security/request";
-import { hit, POLICIES, rateKey, reset, retryMessage } from "@/lib/security/rate-limit";
+import { hit, POLICIES, rateKey, reset, retryMinutes } from "@/lib/security/rate-limit";
 import { recordAuthEvent } from "@/lib/security/audit";
 import { passwordWeakness } from "@/lib/security/passwords";
 import { decryptSecret } from "@/lib/security/crypto";
 import { recoveryCodeMatches, verifyTotp } from "@/lib/security/totp";
+import { isLocale, LOCALE_COOKIE } from "@/lib/i18n/locales";
+import { mergeSettings } from "@/lib/config/settings";
 import {
   changePasswordSchema,
   fieldErrors,
@@ -36,6 +39,7 @@ import {
 
 export type AuthState = {
   error?: string;
+  /** Field errors are translation keys (validation.*) or translated text. */
   fields?: Record<string, string>;
   /** Non-secret values echoed back so the form keeps them after a failed submit. */
   values?: Record<string, string>;
@@ -48,11 +52,21 @@ function echo(formData: FormData, ...keys: string[]) {
   return values;
 }
 
-async function issueSession(user: { id: string; name: string; sessionVersion: number }) {
+async function issueSession(user: { id: string; name: string; sessionVersion: number; settings?: unknown }) {
   const token = await encryptSession({ userId: user.id, name: user.name, sv: user.sessionVersion });
   const store = await cookies();
   store.set(SESSION_COOKIE, token, sessionCookieOptions());
   store.delete(TWO_FACTOR_COOKIE);
+  // Follow the account's saved language on this device.
+  const language = mergeSettings(user.settings as never).language;
+  if (isLocale(language)) {
+    store.set(LOCALE_COOKIE, language, {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 365 * 24 * 60 * 60,
+    });
+  }
 }
 
 async function pause(ms = 300) {
@@ -62,18 +76,19 @@ async function pause(ms = 300) {
 /* ------------------------------------------------------------------ register */
 
 export async function register(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  if (!isRegistrationOpen()) return { error: "Registration is closed on this instance." };
+  const t = await getTranslations("server");
+  if (!isRegistrationOpen()) return { error: t("registrationClosed") };
   const client = await getClientInfo();
   const values = echo(formData, "name", "email");
 
   // Honeypot: real people never see or fill this field.
   if (String(formData.get("website") ?? "").length > 0) {
     await pause(800);
-    return { error: "Could not create the account. Please try again.", values };
+    return { error: t("couldNotCreate"), values };
   }
 
   const limit = await hit(rateKey("register:ip", client.ip), POLICIES.registerIp);
-  if (!limit.allowed) return { error: retryMessage(limit.retryAfterSec), values };
+  if (!limit.allowed) return { error: t("tooManyAttempts", { minutes: retryMinutes(limit.retryAfterSec) }), values };
 
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
@@ -87,32 +102,37 @@ export async function register(_prev: AuthState, formData: FormData): Promise<Au
   const weak = passwordWeakness(password, { email, name });
   if (weak) return { fields: { password: weak }, values };
 
-  const taken = { fields: { email: "An account with this email already exists. Try signing in." }, values };
+  const taken = { fields: { email: t("emailTaken") }, values };
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   if (existing) return taken;
+
+  const store = await cookies();
+  const language = store.get(LOCALE_COOKIE)?.value;
+  const settings = isLocale(language) ? { language } : {};
 
   let created: { id: string; name: string; sessionVersion: number } | undefined;
   try {
     [created] = await db
       .insert(users)
-      .values({ name, email, passwordHash: await hashPassword(password), settings: {} })
+      .values({ name, email, passwordHash: await hashPassword(password), settings })
       .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion });
   } catch (err) {
     // Unique violation if two sign-ups race on the same email.
     if (err instanceof Error && /unique|duplicate/i.test(err.message)) return taken;
     throw err;
   }
-  if (!created) return { error: "Could not create the account. Please try again.", values };
+  if (!created) return { error: t("couldNotCreate"), values };
 
   await seedDefaultCategories(created.id);
   await recordAuthEvent("register", client, { userId: created.id });
-  await issueSession(created);
+  await issueSession({ ...created, settings });
   redirect("/dashboard?welcome=1");
 }
 
 /* --------------------------------------------------------------------- login */
 
 export async function login(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const t = await getTranslations("server");
   const client = await getClientInfo();
   const values = echo(formData, "email");
 
@@ -135,14 +155,14 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   if (blocked && !blocked.allowed) {
     const [u] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
     await recordAuthEvent("login_locked", client, { userId: u?.id ?? null });
-    return { error: retryMessage(blocked.retryAfterSec), values };
+    return { error: t("tooManyAttempts", { minutes: retryMinutes(blocked.retryAfterSec) }), values };
   }
 
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   const valid = await verifyPasswordOrBurn(password, user?.passwordHash);
   if (!user || !valid) {
     await recordAuthEvent("login_failed", client, { userId: user?.id ?? null });
-    return { error: "Wrong email or password.", values };
+    return { error: t("wrongCredentials"), values };
   }
 
   if (user.totpEnabled) {
@@ -160,15 +180,16 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
 /* ----------------------------------------------------------- 2fa at login */
 
 export async function verifyTwoFactor(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const t = await getTranslations("server");
   const client = await getClientInfo();
   const store = await cookies();
   const challenge = await decryptTwoFactorChallenge(store.get(TWO_FACTOR_COOKIE)?.value);
-  if (!challenge) return { error: "This sign-in attempt expired. Start again." };
+  if (!challenge) return { error: t("attemptExpired") };
 
   const limit = await hit(rateKey("2fa:user", challenge.userId), POLICIES.twoFactor);
   if (!limit.allowed) {
     await recordAuthEvent("login_locked", client, { userId: challenge.userId, detail: "two-factor" });
-    return { error: retryMessage(limit.retryAfterSec) };
+    return { error: t("tooManyAttempts", { minutes: retryMinutes(limit.retryAfterSec) }) };
   }
 
   const parsed = twoFactorCodeSchema.safeParse({ code: formData.get("code") });
@@ -176,7 +197,7 @@ export async function verifyTwoFactor(_prev: AuthState, formData: FormData): Pro
   const code = parsed.data.code;
 
   const [user] = await db.select().from(users).where(eq(users.id, challenge.userId)).limit(1);
-  if (!user) return { error: "This sign-in attempt expired. Start again." };
+  if (!user) return { error: t("attemptExpired") };
 
   let accepted = false;
   let usedRecovery = false;
@@ -205,7 +226,7 @@ export async function verifyTwoFactor(_prev: AuthState, formData: FormData): Pro
 
   if (!accepted) {
     await recordAuthEvent("two_factor_failed", client, { userId: user.id });
-    return { fields: { code: "That code is not valid." } };
+    return { fields: { code: t("invalidCode") } };
   }
 
   await Promise.all([
@@ -220,6 +241,7 @@ export async function verifyTwoFactor(_prev: AuthState, formData: FormData): Pro
 /* ------------------------------------------------------------------ profile */
 
 export async function updateProfile(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const t = await getTranslations("server");
   const current = await getCurrentUser();
   if (!current) redirect("/login");
   const client = await getClientInfo();
@@ -232,18 +254,18 @@ export async function updateProfile(_prev: AuthState, formData: FormData): Promi
   if (emailChanged) {
     // Changing the sign-in identity needs the password, so a hijacked tab cannot lock you out.
     const limit = await hit(rateKey("password:user", current.id), POLICIES.password);
-    if (!limit.allowed) return { error: retryMessage(limit.retryAfterSec) };
+    if (!limit.allowed) return { error: t("tooManyAttempts", { minutes: retryMinutes(limit.retryAfterSec) }) };
 
     const [row] = await db.select().from(users).where(eq(users.id, current.id)).limit(1);
     const ok = row ? await verifyPassword(String(formData.get("currentPassword") ?? ""), row.passwordHash) : false;
-    if (!ok) return { fields: { currentPassword: "Enter your current password to change the email." } };
+    if (!ok) return { fields: { currentPassword: t("passwordForEmail") } };
 
     const [takenRow] = await db
       .select({ id: users.id })
       .from(users)
       .where(and(eq(users.email, email), ne(users.id, current.id)))
       .limit(1);
-    if (takenRow) return { fields: { email: "That email is already used by another account." } };
+    if (takenRow) return { fields: { email: t("emailUsedByOther") } };
   }
 
   const [updated] = await db
@@ -256,7 +278,7 @@ export async function updateProfile(_prev: AuthState, formData: FormData): Promi
       updatedAt: new Date(),
     })
     .where(eq(users.id, current.id))
-    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion });
+    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion, settings: users.settings });
 
   if (emailChanged) await recordAuthEvent("email_changed", client, { userId: current.id });
   await issueSession(updated);
@@ -267,12 +289,13 @@ export async function updateProfile(_prev: AuthState, formData: FormData): Promi
 /* ----------------------------------------------------------------- password */
 
 export async function changePassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const t = await getTranslations("server");
   const current = await getCurrentUser();
   if (!current) redirect("/login");
   const client = await getClientInfo();
 
   const limit = await hit(rateKey("password:user", current.id), POLICIES.password);
-  if (!limit.allowed) return { error: retryMessage(limit.retryAfterSec) };
+  if (!limit.allowed) return { error: t("tooManyAttempts", { minutes: retryMinutes(limit.retryAfterSec) }) };
 
   const parsed = changePasswordSchema.safeParse({
     currentPassword: formData.get("currentPassword"),
@@ -288,7 +311,7 @@ export async function changePassword(_prev: AuthState, formData: FormData): Prom
   if (!row) redirect("/login");
 
   const valid = await verifyPassword(parsed.data.currentPassword, row.passwordHash);
-  if (!valid) return { fields: { currentPassword: "Current password is incorrect" } };
+  if (!valid) return { fields: { currentPassword: t("wrongCurrentPassword") } };
 
   const [updated] = await db
     .update(users)
@@ -298,7 +321,7 @@ export async function changePassword(_prev: AuthState, formData: FormData): Prom
       updatedAt: new Date(),
     })
     .where(eq(users.id, current.id))
-    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion });
+    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion, settings: users.settings });
 
   await Promise.all([
     reset(rateKey("password:user", current.id)),
@@ -320,7 +343,7 @@ export async function revokeOtherSessions(): Promise<AuthState> {
     .update(users)
     .set({ sessionVersion: sql`${users.sessionVersion} + 1`, updatedAt: new Date() })
     .where(eq(users.id, current.id))
-    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion });
+    .returning({ id: users.id, name: users.name, sessionVersion: users.sessionVersion, settings: users.settings });
 
   await recordAuthEvent("sessions_revoked", client, { userId: current.id });
   await issueSession(updated);

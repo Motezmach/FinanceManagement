@@ -6,7 +6,7 @@ import type { ClientInfo } from "./request";
 import type { AuthEventType } from "./audit-labels";
 
 export type { AuthEventType } from "./audit-labels";
-export { EVENT_LABELS, WARNING_EVENTS } from "./audit-labels";
+export { WARNING_EVENTS } from "./audit-labels";
 
 export type AuthEvent = typeof authEvents.$inferSelect;
 

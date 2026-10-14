@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Archive, ArchiveRestore, Pencil, Plus, Shapes, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Category } from "@/lib/db/schema";
@@ -24,6 +25,7 @@ import { useFormat } from "@/components/providers/settings-provider";
 
 export function CategoriesView({ stats, initialKind = "credit" }: { stats: CategoryStat[]; initialKind?: Kind }) {
   const { kindLabel } = useFormat();
+  const t = useTranslations("categories");
   const [kind, setKind] = useState<Kind>(initialKind);
   const [dialog, setDialog] = useState<{ open: boolean; category?: Category | null }>({ open: false });
 
@@ -44,30 +46,25 @@ export function CategoriesView({ stats, initialKind = "credit" }: { stats: Categ
           ]}
         />
         <Button onClick={() => setDialog({ open: true, category: null })}>
-          <Plus className="h-4 w-4" /> New category
+          <Plus className="h-4 w-4" /> {t("new")}
         </Button>
       </div>
 
       {active.length ? (
         <div className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {active.map((s) => (
-            <CategoryCard
-              key={s.category.id}
-              stat={s}
-              share={monthTotal ? s.periodTotal / monthTotal : 0}
-              onEdit={() => setDialog({ open: true, category: s.category })}
-            />
+            <CategoryCard key={s.category.id} stat={s} share={monthTotal ? s.periodTotal / monthTotal : 0} onEdit={() => setDialog({ open: true, category: s.category })} />
           ))}
         </div>
       ) : (
         <Card>
           <EmptyState
             icon={<Shapes className="h-5 w-5" />}
-            title={`No ${kindLabel(kind).toLowerCase()} categories`}
-            description="Categories help you see where money comes from and where it goes."
+            title={t("empty", { kind: kindLabel(kind).toLowerCase() })}
+            description={t("emptySub")}
             action={
               <Button size="sm" onClick={() => setDialog({ open: true, category: null })}>
-                <Plus className="h-3.5 w-3.5" /> Create one
+                <Plus className="h-3.5 w-3.5" /> {t("createOne")}
               </Button>
             }
           />
@@ -76,9 +73,7 @@ export function CategoriesView({ stats, initialKind = "credit" }: { stats: Categ
 
       {archived.length ? (
         <details className="group">
-          <summary className="cursor-pointer select-none text-[13px] font-medium text-ink-3 hover:text-ink">
-            Archived ({archived.length})
-          </summary>
+          <summary className="cursor-pointer select-none text-[13px] font-medium text-ink-3 hover:text-ink">{t("archived", { count: archived.length })}</summary>
           <div className="mt-3 grid gap-3 opacity-75 sm:grid-cols-2 xl:grid-cols-3">
             {archived.map((s) => (
               <CategoryCard key={s.category.id} stat={s} share={0} onEdit={() => setDialog({ open: true, category: s.category })} />
@@ -94,6 +89,8 @@ export function CategoriesView({ stats, initialKind = "credit" }: { stats: Categ
 
 function CategoryCard({ stat, share, onEdit }: { stat: CategoryStat; share: number; onEdit: () => void }) {
   const { category: c } = stat;
+  const t = useTranslations("categories");
+  const tc = useTranslations("common");
   const [confirm, setConfirm] = useState(false);
   const sw = swatch(c.color);
 
@@ -106,8 +103,8 @@ function CategoryCard({ stat, share, onEdit }: { stat: CategoryStat; share: numb
             <div className="min-w-0">
               <p className="truncate text-[14.5px] font-semibold text-ink">{c.name}</p>
               <p className="text-[12px] text-ink-3">
-                {stat.allTimeCount} {stat.allTimeCount === 1 ? "entry" : "entries"}
-                {stat.openTotal > 0 ? " · open " : ""}
+                {tc("entryCount", { count: stat.allTimeCount })}
+                {stat.openTotal > 0 ? ` ${t("openPrefix")} ` : ""}
                 {stat.openTotal > 0 ? <Money amount={stat.openTotal} muted className="text-[12px]" /> : null}
               </p>
             </div>
@@ -116,49 +113,49 @@ function CategoryCard({ stat, share, onEdit }: { stat: CategoryStat; share: numb
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[11.5px] uppercase tracking-wider text-ink-3">This month</p>
-            <Money amount={stat.periodTotal} className="font-display text-[24px] leading-none tracking-tight" />
-            {share > 0 ? <p className="mt-1 text-[12px] text-ink-3">{Math.round(share * 100)}% of the month</p> : null}
+            <p className="text-[11.5px] uppercase tracking-wider text-ink-3">{t("thisMonth")}</p>
+            <Money amount={stat.periodTotal} className="font-display text-[22px] leading-none" />
+            {share > 0 ? <p className="mt-1 text-[12px] text-ink-3">{t("share", { percent: Math.round(share * 100) })}</p> : null}
           </div>
-          <Sparkline data={stat.trend.map((t) => t.total)} color={sw.chart} height={40} className="w-[110px]" />
+          <Sparkline data={stat.trend.map((x) => x.total)} color={sw.chart} height={40} className="w-[110px]" />
         </div>
       </Link>
-      <div className="absolute right-3 top-3">
+      <div className="absolute end-3 top-3">
         <Menu
           items={[
-            { label: "Edit", icon: <Pencil />, onSelect: onEdit },
+            { label: tc("edit"), icon: <Pencil />, onSelect: onEdit },
             c.isArchived
               ? {
-                  label: "Restore",
+                  label: t("restore"),
                   icon: <ArchiveRestore />,
                   onSelect: async () => {
                     const r = await setCategoryArchived(c.id, false);
-                    if (r.ok) toast.success("Category restored");
+                    if (r.ok) toast.success(t("restored"));
                     else toast.error(r.error);
                   },
                 }
               : {
-                  label: "Archive",
+                  label: t("archive"),
                   icon: <Archive />,
                   onSelect: async () => {
                     const r = await setCategoryArchived(c.id, true);
-                    if (r.ok) toast.success("Category archived");
+                    if (r.ok) toast.success(t("archivedToast"));
                     else toast.error(r.error);
                   },
                 },
             { type: "separator" },
-            { label: "Delete", icon: <Trash2 />, tone: "danger", onSelect: () => setConfirm(true) },
+            { label: tc("delete"), icon: <Trash2 />, tone: "danger", onSelect: () => setConfirm(true) },
           ]}
         />
       </div>
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        title={`Delete "${c.name}"?`}
-        description="Entries in this category are kept but become uncategorized. Archiving hides it instead, without losing anything."
+        title={t("deleteTitle", { name: c.name })}
+        description={t("deleteBody")}
         onConfirm={async () => {
           const r = await deleteCategory(c.id);
-          if (r.ok) toast.success(`Deleted · ${r.data?.orphaned ?? 0} entries now uncategorized`);
+          if (r.ok) toast.success(t("deletedToast", { count: r.data?.orphaned ?? 0 }));
           else toast.error(r.error);
         }}
       />

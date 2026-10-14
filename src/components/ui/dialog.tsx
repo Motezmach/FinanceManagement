@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export function Dialog({
   className?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("common");
 
   useEffect(() => {
     if (!open) return;
@@ -100,7 +102,7 @@ export function Dialog({
                     data-close
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={t("close")}
                     className="-mr-2 -mt-1 rounded-lg p-2 text-ink-3 transition hover:bg-surface-2 hover:text-ink"
                   >
                     <X className="h-4 w-4" />

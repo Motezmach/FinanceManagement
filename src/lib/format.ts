@@ -1,4 +1,12 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO, type Locale as DateFnsLocale } from "date-fns";
+import { ar, enUS, fr } from "date-fns/locale";
+import type { Locale } from "@/lib/i18n/locales";
+
+const DATE_LOCALES: Record<Locale, DateFnsLocale> = { en: enUS, fr, ar };
+
+export function dateLocale(locale: Locale | string | undefined): DateFnsLocale {
+  return DATE_LOCALES[(locale as Locale) ?? "en"] ?? enUS;
+}
 
 export function formatMoney(
   amount: number,
@@ -35,21 +43,30 @@ export function formatNumber(n: number, locale = "en-US", maximumFractionDigits 
 }
 
 /** "Mon 13 Oct" style for compact rows. */
-export function formatDay(iso: string) {
-  return format(parseISO(iso), "EEE d MMM");
+export function formatDay(iso: string, locale: Locale = "en") {
+  return format(parseISO(iso), "EEE d MMM", { locale: dateLocale(locale) });
 }
 
-export function formatLongDate(d: Date) {
-  return format(d, "EEEE, d MMMM yyyy");
+export function formatLongDate(d: Date, locale: Locale = "en") {
+  return format(d, "EEEE, d MMMM yyyy", { locale: dateLocale(locale) });
 }
 
-export function formatMonth(iso: string) {
+export function formatMonth(iso: string, locale: Locale = "en") {
   // iso = "YYYY-MM"
-  return format(parseISO(`${iso}-01`), "MMMM yyyy");
+  return format(parseISO(`${iso}-01`), "MMMM yyyy", { locale: dateLocale(locale) });
 }
 
-export function formatShortMonth(iso: string) {
-  return format(parseISO(`${iso}-01`), "MMM");
+export function formatShortMonth(iso: string, locale: Locale = "en") {
+  return format(parseISO(`${iso}-01`), "MMM", { locale: dateLocale(locale) });
+}
+
+/** Localised weekday names, Monday first. `width` = "short" (Mon) or "narrow" (M). */
+export function weekdayNames(locale: Locale = "en", width: "short" | "narrow" = "short") {
+  const l = dateLocale(locale);
+  // 2024-01-01 is a Monday.
+  return Array.from({ length: 7 }, (_, i) =>
+    format(new Date(2024, 0, 1 + i), width === "short" ? "EEE" : "EEEEE", { locale: l }),
+  );
 }
 
 export function percent(part: number, total: number) {

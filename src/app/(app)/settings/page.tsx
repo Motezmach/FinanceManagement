@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { AlertTriangle, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth/current-user";
 import { logout } from "@/lib/actions/auth";
 import { listAuthEvents } from "@/lib/security/audit";
-import { describeAgent } from "@/lib/security/request";
+import { parseAgent } from "@/lib/security/request";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -14,31 +15,36 @@ import { ProfileForm } from "@/components/settings/profile-form";
 import { TwoFactorCard } from "@/components/settings/two-factor-card";
 import { ActivityCard, SessionsCard } from "@/components/settings/security-cards";
 
-export const metadata: Metadata = { title: "Settings" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("nav");
+  return { title: t("settings") };
+}
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ recovery?: string }> }) {
   const user = await requireUser();
   const sp = await searchParams;
+  const t = await getTranslations("settings");
   const events = await listAuthEvents(user.id, 12);
-  const activity = events.map((e) => ({
-    id: e.id,
-    type: e.type,
-    ipMasked: e.ipMasked,
-    agent: describeAgent(e.userAgent),
-    createdAt: e.createdAt.toISOString(),
-  }));
+  const activity = events.map((e) => {
+    const agent = parseAgent(e.userAgent);
+    return {
+      id: e.id,
+      type: e.type,
+      ipMasked: e.ipMasked,
+      browser: agent.browser,
+      os: agent.os,
+      createdAt: e.createdAt.toISOString(),
+    };
+  });
 
   return (
     <>
-      <PageHeader eyebrow="Settings" title="Make it yours" description="Profile, security, currency, wording and appearance." />
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
 
       {sp.recovery === "1" ? (
         <div className="mb-5 flex items-start gap-3 rounded-xl2 border border-warn/50 bg-warn-soft px-4 py-3 text-[13.5px] text-warn-ink">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            You signed in with a recovery code. That code is now used up. If you lost your authenticator, turn two-factor off and set it
-            up again on your new device, then generate fresh recovery codes.
-          </span>
+          <span>{t("recoveryBanner")}</span>
         </div>
       ) : null}
 
@@ -46,12 +52,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <div className="space-y-5">
           <Card>
             <CardHeader
-              title="Profile"
-              description="How we greet you and how you sign in."
+              title={t("profile.title")}
+              description={t("profile.subtitle")}
               action={
                 <form action={logout}>
                   <Button type="submit" variant="outline" size="sm">
-                    <LogOut className="h-3.5 w-3.5" /> Sign out
+                    <LogOut className="h-3.5 w-3.5 rtl:-scale-x-100" /> {t("profile.signOut")}
                   </Button>
                 </form>
               }
@@ -61,39 +67,30 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </CardBody>
           </Card>
           <Card>
-            <CardHeader title="Preferences" description="How amounts and the two sides of the ledger are shown." />
+            <CardHeader title={t("preferences.title")} description={t("preferences.subtitle")} />
             <CardBody className="pt-4">
               <SettingsForm settings={user.settings} />
             </CardBody>
           </Card>
           <Card>
-            <CardHeader title="Section names" description="Rename the six sections to match how you think. Leave blank for the default." />
+            <CardHeader title={t("sections.title")} description={t("sections.subtitle")} />
             <CardBody className="pt-4">
               <LabelsForm settings={user.settings} />
             </CardBody>
           </Card>
           <Card>
-            <CardHeader title="How it works" />
+            <CardHeader title={t("how.title")} />
             <CardBody className="space-y-3 pt-4 text-[13.5px] leading-relaxed text-ink-2">
-              <p>
-                <span className="font-medium text-ink">Balance</span> is everything settled in minus everything settled out, across all
-                months. Pending and planned entries never touch it until you mark them settled.
-              </p>
-              <p>
-                <span className="font-medium text-ink">Debits</span> move along a pipeline: potential → pending → wallet. Marking one as
-                received stamps today&apos;s date so it lands in the right month.
-              </p>
-              <p>
-                <span className="font-medium text-ink">Fixed monthly rules</span> create a due entry each month. Pausing a rule removes the
-                unpaid instance; paid history always stays.
-              </p>
+              {(["p1", "p2", "p3"] as const).map((k) => (
+                <p key={k}>{t.rich(`how.${k}`, { b: (c) => <span className="font-medium text-ink">{c}</span> })}</p>
+              ))}
             </CardBody>
           </Card>
         </div>
         <div className="space-y-5">
           <TwoFactorCard enabled={user.totpEnabled} />
           <Card>
-            <CardHeader title="Password" description="Changing it signs out every other device." />
+            <CardHeader title={t("password.title")} description={t("password.subtitle")} />
             <CardBody className="pt-4">
               <PasswordForm />
             </CardBody>

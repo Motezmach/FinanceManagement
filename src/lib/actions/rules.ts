@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, entries, recurringRules } from "@/lib/db/schema";
@@ -15,20 +16,22 @@ function refresh() {
 }
 
 async function assertCreditCategory(userId: string, categoryId: string) {
+  const t = await getTranslations("server");
   const [cat] = await db
     .select({ kind: categories.kind })
     .from(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
     .limit(1);
-  if (!cat) return "Pick a category";
-  if (cat.kind !== "credit") return "Fixed payments need a credit category";
+  if (!cat) return t("pickCategory");
+  if (cat.kind !== "credit") return t("fixedNeedsCredit");
   return null;
 }
 
 export async function createRule(raw: unknown): Promise<ActionResult<{ id: string }>> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = ruleSchema.safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
   const input = parsed.data;
 
   const catError = await assertCreditCategory(user.id, input.categoryId);
@@ -52,9 +55,10 @@ export async function createRule(raw: unknown): Promise<ActionResult<{ id: strin
 }
 
 export async function updateRule(id: string, raw: unknown): Promise<ActionResult> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = ruleSchema.safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
   const input = parsed.data;
 
   const catError = await assertCreditCategory(user.id, input.categoryId);

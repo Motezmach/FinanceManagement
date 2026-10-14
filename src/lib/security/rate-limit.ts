@@ -85,7 +85,7 @@ export async function reset(key: string) {
   await db.delete(rateLimits).where(eq(rateLimits.key, key));
 }
 
-export function retryMessage(retryAfterSec: number) {
-  const min = Math.max(1, Math.ceil(retryAfterSec / 60));
-  return `Too many attempts. Try again in ${min} minute${min === 1 ? "" : "s"}.`;
+/** Whole minutes to wait, never less than one; the caller translates the sentence. */
+export function retryMinutes(retryAfterSec: number) {
+  return Math.max(1, Math.ceil(retryAfterSec / 60));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { UserSettings } from "@/lib/config/settings";
 import { BUCKET_META, BUCKETS_BY_KIND, type Bucket } from "@/lib/config/buckets";
@@ -10,7 +11,9 @@ import { Field, Input } from "@/components/ui/field";
 import { useFormat } from "@/components/providers/settings-provider";
 
 export function LabelsForm({ settings }: { settings: UserSettings }) {
-  const { kindLabel } = useFormat();
+  const { kindLabel, bucketDescription } = useFormat();
+  const t = useTranslations("settings.sections");
+  const tb = useTranslations("buckets");
   const [pending, start] = useTransition();
   const [form, setForm] = useState<Record<Bucket, string>>(() => {
     const out = {} as Record<Bucket, string>;
@@ -22,7 +25,7 @@ export function LabelsForm({ settings }: { settings: UserSettings }) {
     start(async () => {
       const res = await updateBucketLabels(form);
       if (!res.ok) toast.error(res.error);
-      else toast.success("Section names saved");
+      else toast.success(t("saved"));
     });
 
   return (
@@ -38,13 +41,8 @@ export function LabelsForm({ settings }: { settings: UserSettings }) {
           <p className="mb-2 text-[12px] font-medium uppercase tracking-wider text-ink-3">{kindLabel(kind)}</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {BUCKETS_BY_KIND[kind].map((b) => (
-              <Field key={b} label={BUCKET_META[b].label} hint={BUCKET_META[b].description}>
-                <Input
-                  placeholder={BUCKET_META[b].label}
-                  value={form[b]}
-                  maxLength={32}
-                  onChange={(e) => setForm({ ...form, [b]: e.target.value })}
-                />
+              <Field key={b} label={tb(`${b}.label`)} hint={bucketDescription(b)}>
+                <Input placeholder={tb(`${b}.label`)} value={form[b]} maxLength={32} onChange={(e) => setForm({ ...form, [b]: e.target.value })} />
               </Field>
             ))}
           </div>
@@ -52,7 +50,7 @@ export function LabelsForm({ settings }: { settings: UserSettings }) {
       ))}
       <div className="flex justify-end">
         <Button type="submit" loading={pending}>
-          Save names
+          {t("save")}
         </Button>
       </div>
     </form>

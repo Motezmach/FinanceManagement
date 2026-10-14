@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/current-user";
 import { getCategoryDetail } from "@/lib/queries/categories";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
 import { CategoryDetailView } from "@/components/categories/category-detail";
 
-export const metadata: Metadata = { title: "Category" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("categories");
+  return { title: t("title") };
+}
 
 export default async function CategoryPage({
   params,

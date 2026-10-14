@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { and, count, eq, max } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, entries } from "@/lib/db/schema";
@@ -13,9 +14,10 @@ function refresh() {
 }
 
 export async function createCategory(raw: unknown): Promise<ActionResult<{ id: string }>> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = categorySchema.safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
   const input = parsed.data;
 
   const [{ value: last }] = await db
@@ -33,9 +35,10 @@ export async function createCategory(raw: unknown): Promise<ActionResult<{ id: s
 }
 
 export async function updateCategory(id: string, raw: unknown): Promise<ActionResult> {
+  const t = await getTranslations("server");
   const user = await requireUser();
   const parsed = categorySchema.omit({ kind: true }).safeParse(raw);
-  if (!parsed.success) return fail("Check the highlighted fields", fieldErrors(parsed.error));
+  if (!parsed.success) return fail(t("checkFields"), fieldErrors(parsed.error));
 
   await db
     .update(categories)
