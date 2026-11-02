@@ -85,6 +85,20 @@ export function sessionCookieOptions() {
   };
 }
 
+/**
+ * Removes a cookie. Browsers ignore a __Host- cookie sent without Secure, and
+ * cookies().delete(name) doesn't send it, so that call leaves the cookie in place.
+ */
+export function clearedCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: PROD,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 0,
+  };
+}
+
 export function twoFactorCookieOptions() {
   return {
     httpOnly: true,

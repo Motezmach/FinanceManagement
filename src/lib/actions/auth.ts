@@ -13,6 +13,7 @@ import {
   decryptTwoFactorChallenge,
   encryptSession,
   encryptTwoFactorChallenge,
+  clearedCookieOptions,
   SESSION_COOKIE,
   sessionCookieOptions,
   TWO_FACTOR_COOKIE,
@@ -56,7 +57,7 @@ async function issueSession(user: { id: string; name: string; sessionVersion: nu
   const token = await encryptSession({ userId: user.id, name: user.name, sv: user.sessionVersion });
   const store = await cookies();
   store.set(SESSION_COOKIE, token, sessionCookieOptions());
-  store.delete(TWO_FACTOR_COOKIE);
+  store.set(TWO_FACTOR_COOKIE, "", clearedCookieOptions());
   // Follow the account's saved language on this device.
   const language = mergeSettings(user.settings as never).language;
   if (isLocale(language)) {
@@ -353,12 +354,12 @@ export async function revokeOtherSessions(): Promise<AuthState> {
 
 export async function logout() {
   const store = await cookies();
-  store.delete(SESSION_COOKIE);
-  store.delete(TWO_FACTOR_COOKIE);
+  store.set(SESSION_COOKIE, "", clearedCookieOptions());
+  store.set(TWO_FACTOR_COOKIE, "", clearedCookieOptions());
   redirect("/login");
 }
 
 export async function cancelTwoFactorLogin() {
-  (await cookies()).delete(TWO_FACTOR_COOKIE);
+  (await cookies()).set(TWO_FACTOR_COOKIE, "", clearedCookieOptions());
   redirect("/login");
 }
