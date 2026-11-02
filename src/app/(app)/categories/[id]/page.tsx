@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/current-user";
+import { ensureSynced } from "@/lib/fixed/sync";
 import { getCategoryDetail } from "@/lib/queries/categories";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
 import { CategoryDetailView } from "@/components/categories/category-detail";
@@ -24,6 +25,7 @@ export default async function CategoryPage({
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
 
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  await ensureSynced(user);
   const detail = await getCategoryDetail(user.id, id, period);
   if (!detail) notFound();
 

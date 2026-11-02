@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Dialog } from "./dialog";
 import { Button } from "./button";
 
@@ -29,8 +30,13 @@ export function ConfirmDialog({
     <Dialog open={open} onClose={onClose} size="sm" hideClose>
       <div className="px-6 pb-6 pt-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-danger-soft text-danger-ink">
-            <AlertTriangle className="h-5 w-5" />
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+              tone === "danger" ? "bg-danger-soft text-danger-ink" : "bg-surface-2 text-ink-2",
+            )}
+          >
+            {tone === "danger" ? <AlertTriangle className="h-5 w-5" /> : <Info className="h-5 w-5" />}
           </div>
           <div className="min-w-0">
             <h2 className="text-[16px] font-semibold text-ink">{title}</h2>
@@ -44,7 +50,6 @@ export function ConfirmDialog({
           <Button
             variant={tone === "danger" ? "danger" : "primary"}
             loading={busy}
-            data-autofocus
             onClick={async () => {
               setBusy(true);
               try {

@@ -1,10 +1,10 @@
 export type Kind = "debit" | "credit";
 export type Bucket = "wallet" | "pending" | "potential" | "fixed" | "optional" | "daily";
-export type Status = "settled" | "pending" | "planned";
+export type Status = "settled" | "pending" | "planned" | "saved";
 
 export const KINDS: Kind[] = ["debit", "credit"];
 export const BUCKETS: Bucket[] = ["wallet", "pending", "potential", "fixed", "optional", "daily"];
-export const STATUSES: Status[] = ["settled", "pending", "planned"];
+export const STATUSES: Status[] = ["settled", "pending", "planned", "saved"];
 
 export type BucketMeta = {
   kind: Kind;
@@ -126,6 +126,12 @@ export const STATUS_META: Record<
     creditLabel: "Planned",
     description: "Might happen. Not counted in your balance.",
   },
+  saved: {
+    label: "In savings",
+    debitLabel: "In savings",
+    creditLabel: "In savings",
+    description: "Still in your balance, kept for this bill until it is paid.",
+  },
 };
 
 export function statusLabel(status: Status, kind: Kind) {
@@ -137,8 +143,11 @@ export function settledBucket(kind: Kind, bucket: Bucket): Bucket {
   return kind === "debit" ? "wallet" : bucket;
 }
 
-/** Bucket implied by a status, for debits (the pipeline: potential → pending → wallet). */
-export function debitBucketForStatus(status: Status): Bucket {
+/**
+ * Bucket implied by a status, for debits (the pipeline: potential → pending → wallet).
+ * `saved` only exists on fixed credit bills, so the type keeps it out.
+ */
+export function debitBucketForStatus(status: Exclude<Status, "saved">): Bucket {
   return status === "settled" ? "wallet" : status === "pending" ? "pending" : "potential";
 }
 

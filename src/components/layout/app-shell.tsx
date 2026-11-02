@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import {
   ArrowDownLeft,
@@ -13,10 +13,12 @@ import {
   LogOut,
   Monitor,
   Moon,
+  PiggyBank,
   Plus,
   Settings,
   Shapes,
   Sun,
+  type LucideIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -26,7 +28,9 @@ import { useTheme } from "@/components/providers/theme-provider";
 import { useFormat } from "@/components/providers/settings-provider";
 import { LanguageSwitcher } from "./language-switcher";
 
-function Brand() {
+type NavItem = { href: string; label: string; icon: LucideIcon; children?: NavItem[] };
+
+function Brand({ compact }: { compact?: boolean }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5 px-2">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-fg">
@@ -34,7 +38,7 @@ function Brand() {
           <path d="M4 7h16M4 12h10M4 17h7" strokeLinecap="round" />
         </svg>
       </span>
-      <span className="font-display text-[18px] leading-none text-ink">Ledger</span>
+      <span className={cn("font-display text-[18px] leading-none text-ink", compact && "max-[419px]:sr-only")}>Ledger</span>
     </Link>
   );
 }
@@ -75,10 +79,15 @@ export function AppShell({ name, email, children }: { name: string; email: strin
   const t = useTranslations("nav");
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const items = [
+  const items: NavItem[] = [
     { href: "/dashboard", label: t("overview"), icon: LayoutDashboard },
     { href: "/debits", label: kindLabel("debit"), icon: ArrowDownLeft },
-    { href: "/credits", label: kindLabel("credit"), icon: ArrowUpRight },
+    {
+      href: "/credits",
+      label: kindLabel("credit"),
+      icon: ArrowUpRight,
+      children: [{ href: "/credits/savings", label: t("savings"), icon: PiggyBank }],
+    },
     { href: "/calendar", label: t("calendar"), icon: CalendarDays },
     { href: "/categories", label: t("categories"), icon: Shapes },
     { href: "/analytics", label: t("analytics"), icon: BarChart3 },
@@ -104,25 +113,50 @@ export function AppShell({ name, email, children }: { name: string; email: strin
         <nav className="mt-6 flex flex-col gap-0.5">
           {items.map((item) => {
             const active = isActive(item.href);
+            // On a child's page the parent stays highlighted but the pill moves off it.
+            const hasPill = active && !item.children?.some((child) => isActive(child.href));
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors",
-                  active ? "text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
-                )}
-              >
-                {active ? (
-                  <motion.span
-                    layoutId="nav-active"
-                    className="absolute inset-0 rounded-lg bg-surface-3"
-                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                  />
+              <Fragment key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] font-medium transition-colors",
+                    active ? "text-ink" : "text-ink-2 hover:text-ink",
+                    !hasPill && "hover:bg-surface-2",
+                  )}
+                >
+                  {hasPill ? (
+                    <motion.span
+                      layoutId="nav-active"
+                      className="absolute inset-0 rounded-lg bg-surface-3"
+                      transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                    />
+                  ) : null}
+                  <item.icon className={cn("relative h-4 w-4", active ? "text-accent" : "text-ink-3")} />
+                  <span className="relative">{item.label}</span>
+                </Link>
+                {item.children?.length ? (
+                  <div className="ms-[17px] border-s border-line py-0.5 ps-2">
+                    {item.children.map((child) => {
+                      const childActive = isActive(child.href);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          aria-current={childActive ? "page" : undefined}
+                          className={cn(
+                            "flex h-8 items-center gap-2 rounded-lg px-2 text-[13px] font-medium transition-colors",
+                            childActive ? "bg-surface-3 text-ink" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
+                          )}
+                        >
+                          <child.icon className={cn("h-3.5 w-3.5", childActive && "text-accent")} />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 ) : null}
-                <item.icon className={cn("relative h-4 w-4", active ? "text-accent" : "text-ink-3")} />
-                <span className="relative">{item.label}</span>
-              </Link>
+              </Fragment>
             );
           })}
         </nav>
@@ -177,8 +211,8 @@ export function AppShell({ name, email, children }: { name: string; email: strin
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-canvas/80 px-4 backdrop-blur md:hidden">
-          <Brand />
-          <div className="flex items-center gap-2">
+          <Brand compact />
+          <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
             <Link href="/settings" aria-label={t("settings")} className="rounded-lg p-2 text-ink-2 hover:bg-surface-2">

@@ -1,31 +1,37 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calculator, Check, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { subDays } from "date-fns";
+import { parseISO, subDays } from "date-fns";
 import type { Category } from "@/lib/db/schema";
 import { BUCKET_META, BUCKETS_BY_KIND, debitBucketForStatus, type Bucket, type Kind, type Status } from "@/lib/config/buckets";
 import { DynamicIcon } from "@/lib/config/icons";
 import { KIND_COLORS } from "@/lib/config/palette";
-import { todayISO, toISODate } from "@/lib/dates";
+import { toISODate } from "@/lib/dates";
+import { dayOfDate, firstRecordDate, nextFullOccurrence, occurrence, periodOf, renewsOn } from "@/lib/fixed/cycle";
 import { entrySchema, fieldErrors } from "@/lib/validation";
 import { createEntry, updateEntry } from "@/lib/actions/entries";
 import { currencySymbol } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, round2 } from "@/lib/utils";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { CategoryIcon } from "@/components/ui/category-chip";
 import { Badge } from "@/components/ui/badge";
+import { useCalculator } from "@/components/calculator/calculator-provider";
+import { AutoPaySwitch } from "@/components/fixed/auto-pay-switch";
+import { BillPreview } from "@/components/fixed/bill-preview";
+import { useBillDates } from "@/components/fixed/use-bill-dates";
 import { useFormat } from "@/components/providers/settings-provider";
 import type { EditableEntry, EntryPreset } from "@/components/providers/entry-modal-provider";
 
 type Step = 0 | 1 | 2 | 3;
 const STEP_KEYS = ["type", "section", "details", "review"] as const;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 type FormState = {
   kind: Kind;
@@ -36,9 +42,11 @@ type FormState = {
   categoryId: string;
   date: string;
   note: string;
+  autoPay: boolean;
+  applyToRule: boolean;
 };
 
-function initialState(preset?: EntryPreset, entry?: EditableEntry): FormState {
+function initialState(today: string, preset?: EntryPreset, entry?: EditableEntry): FormState {
   if (entry) {
     return {
       kind: entry.kind,
@@ -49,6 +57,8 @@ function initialState(preset?: EntryPreset, entry?: EditableEntry): FormState {
       categoryId: entry.categoryId ?? "",
       date: entry.date,
       note: entry.note ?? "",
+      autoPay: false,
+      applyToRule: entry.applyToRule ?? false,
     };
   }
   const kind = preset?.kind ?? "credit";
@@ -57,11 +67,13 @@ function initialState(preset?: EntryPreset, entry?: EditableEntry): FormState {
     kind,
     bucket,
     status: preset?.status ?? BUCKET_META[bucket].defaultStatus,
-    amount: "",
+    amount: preset?.amount === undefined ? "" : String(preset.amount),
     title: "",
     categoryId: preset?.categoryId ?? "",
-    date: preset?.date ?? todayISO(),
+    date: preset?.date ?? today,
     note: "",
+    autoPay: false,
+    applyToRule: false,
   };
 }
 
@@ -72,11 +84,44 @@ function initialStep(preset?: EntryPreset, entry?: EditableEntry): Step {
   return 0;
 }
 
+function ContextChip({
+  locked,
+  onClick,
+  className,
+  style,
+  children,
+}: {
+  locked: boolean;
+  onClick: () => void;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  if (locked) {
+    return (
+      <span className={cn("rounded-full px-2.5 py-1 font-medium", className)} style={style}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn("rounded-full px-2.5 py-1 font-medium transition hover:brightness-95", className)}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function EntryModal({
   open,
   sessionKey,
   onClose,
   categories,
+  today,
   preset,
   entry,
 }: {
@@ -85,12 +130,13 @@ export function EntryModal({
   sessionKey: number;
   onClose: () => void;
   categories: Category[];
+  today: string;
   preset?: EntryPreset;
   entry?: EditableEntry;
 }) {
   return (
     <Dialog open={open} onClose={onClose} size="lg" hideClose className="sm:max-w-[640px]">
-      <Wizard key={sessionKey} onClose={onClose} categories={categories} preset={preset} entry={entry} />
+      <Wizard key={sessionKey} onClose={onClose} categories={categories} today={today} preset={preset} entry={entry} />
     </Dialog>
   );
 }
@@ -98,11 +144,13 @@ export function EntryModal({
 function Wizard({
   onClose,
   categories,
+  today,
   preset,
   entry,
 }: {
   onClose: () => void;
   categories: Category[];
+  today: string;
   preset?: EntryPreset;
   entry?: EditableEntry;
 }) {
@@ -111,14 +159,30 @@ function Wizard({
   const tc = useTranslations("common");
   const tk = useTranslations("kinds");
   const ts = useTranslations("status");
+  const { shortDate, monthName } = useBillDates();
+  const { result: calculatorResult } = useCalculator();
   const [step, setStep] = useState<Step>(() => initialStep(preset, entry));
   const [dir, setDir] = useState(1);
-  const [form, setForm] = useState<FormState>(() => initialState(preset, entry));
+  const [form, setForm] = useState<FormState>(() => initialState(today, preset, entry));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showNote, setShowNote] = useState(!!entry?.note);
   const [pending, start] = useTransition();
   const isEdit = !!entry;
-  const isRuleInstance = !!entry?.ruleId;
+  const isRuleRecord = !!entry?.ruleId;
+  const firstStep = isRuleRecord ? 2 : 0;
+  // A one-off already in Fixed is edited as a plain entry. Only a new bill or a move into Fixed repeats.
+  const isMonthly = form.kind === "credit" && form.bucket === "fixed" && (!entry || isRuleRecord || entry.bucket !== "fixed");
+  const recordPeriod = entry?.ruleId ? (entry.period ?? periodOf(entry.date)) : null;
+  const dateLocked = isRuleRecord && !form.applyToRule;
+
+  // The date of a short month hides the rule's real day until the user picks another date.
+  const billDay = !isMonthly || !ISO_DATE.test(form.date) ? null : entry?.ruleDay && form.date === entry.date ? entry.ruleDay : dayOfDate(form.date);
+  const billDate = billDay !== null && !isEdit ? firstRecordDate(form.date, today) : form.date;
+  const renewal = billDay === null ? null : renewsOn(recordPeriod ?? periodOf(billDate), billDay);
+  const canSave = entry?.status === "saved" || (renewal !== null && renewal > today);
+  const status: Status = form.status === "saved" && !canSave ? "pending" : form.status;
+  const offersAutoPay = isMonthly && !isRuleRecord;
+  const usableResult = calculatorResult === null ? 0 : round2(calculatorResult);
 
   const cats = useMemo(() => categories.filter((c) => c.kind === form.kind && !c.isArchived), [categories, form.kind]);
   const category = categories.find((c) => c.id === form.categoryId) ?? null;
@@ -149,12 +213,32 @@ function Wizard({
     go(2);
   };
 
-  const setStatus = (status: Status) => {
-    setForm((f) => ({ ...f, status, bucket: f.kind === "debit" ? debitBucketForStatus(status) : f.bucket }));
+  const setStatus = (next: Status) => {
+    setForm((f) => ({
+      ...f,
+      status: next,
+      bucket: f.kind === "debit" && next !== "saved" ? debitBucketForStatus(next) : f.bucket,
+    }));
+  };
+
+  // A changed date moves the day of the months ahead too, so it cannot outlive this option.
+  const setApplyToRule = (applyToRule: boolean) => {
+    setForm((f) => ({ ...f, applyToRule, date: applyToRule || !entry ? f.date : entry.date }));
   };
 
   const validate = () => {
-    const parsed = entrySchema.safeParse({ ...form, note: form.note || undefined });
+    const { kind, bucket, amount, title, categoryId, date, note, autoPay } = form;
+    const parsed = entrySchema.safeParse({
+      kind,
+      bucket,
+      status,
+      amount,
+      title,
+      categoryId,
+      date,
+      note,
+      ...(offersAutoPay ? { autoPay } : {}),
+    });
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error));
       return null;
@@ -170,23 +254,50 @@ function Wizard({
     }
   };
 
+  // The review formats the date, so nothing reaches it without passing validation.
+  const goToStep = (target: Step) => {
+    go(target === 3 && !validate() ? 2 : target);
+  };
+
   const submit = (another: boolean) => {
     const data = validate();
     if (!data) {
       go(2);
       return;
     }
+    const showFailure = (failure: { error: string; fields?: Record<string, string> }) => {
+      setErrors(failure.fields ?? {});
+      toast.error(failure.error);
+      if (failure.fields) go(2);
+    };
     start(async () => {
-      const res = isEdit ? await updateEntry({ ...data, id: entry!.id }) : await createEntry(data);
-      if (!res.ok) {
-        setErrors(res.fields ?? {});
-        toast.error(res.error);
-        if (res.fields) go(2);
+      if (entry) {
+        const res = await updateEntry({
+          ...data,
+          id: entry.id,
+          expectedStatus: entry.status,
+          ...(isRuleRecord ? { applyToRule: form.applyToRule } : {}),
+        });
+        if (!res.ok) {
+          showFailure(res);
+          return;
+        }
+        toast.success(t("updated"));
+        onClose();
         return;
       }
-      toast.success(isEdit ? t("updated") : t("added", { kind: kindLabel(data.kind), amount: money(data.amount) }));
+      const res = await createEntry(data);
+      if (!res.ok) {
+        showFailure(res);
+        return;
+      }
+      toast.success(
+        res.data?.id === null
+          ? t("scheduledFor", { date: shortDate(res.data.date) })
+          : t("added", { kind: kindLabel(data.kind), amount: money(data.amount) }),
+      );
       if (another) {
-        setForm((f) => ({ ...f, amount: "", title: "", note: "" }));
+        setForm((f) => ({ ...f, amount: "", title: "", note: "", autoPay: false }));
         setShowNote(false);
         go(2);
       } else {
@@ -198,9 +309,20 @@ function Wizard({
   const statusOptions: Status[] =
     form.kind === "debit"
       ? ["settled", "pending", "planned"]
-      : form.bucket === "daily"
-        ? ["settled", "pending"]
-        : ["pending", "settled", "planned"];
+      : isMonthly
+        ? canSave
+          ? ["pending", "saved", "settled"]
+          : ["pending", "settled"]
+        : form.bucket === "daily"
+          ? ["settled", "pending"]
+          : ["pending", "settled", "planned"];
+
+  const quickDates = isRuleRecord
+    ? []
+    : [
+        { label: tc("today"), value: today },
+        ...(isMonthly ? [] : [{ label: tc("yesterday"), value: toISODate(subDays(parseISO(today), 1)) }]),
+      ];
 
   const variants = {
     enter: (d: number) => ({ x: d > 0 ? 40 : -40, opacity: 0 }),
@@ -239,13 +361,15 @@ function Wizard({
           {STEP_KEYS.map((key, i) => {
             const done = i < step;
             const active = i === step;
-            const clickable = i < step || (isEdit && i >= 2);
+            const clickable = i >= firstStep && (i < step || (isEdit && i >= 2));
             return (
               <li key={key} className="flex items-center gap-2">
                 <button
                   type="button"
                   disabled={!clickable}
-                  onClick={() => clickable && go(i as Step)}
+                  onClick={() => {
+                    if (clickable) goToStep(i as Step);
+                  }}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full py-1 pe-2.5 ps-1 text-[12px] font-medium transition",
                     active ? "bg-primary text-primary-fg" : done ? "bg-surface-3 text-ink" : "text-ink-3",
@@ -354,23 +478,18 @@ function Wizard({
               <div className="space-y-5">
                 {/* Context chips */}
                 <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
-                  <button
-                    type="button"
+                  <ContextChip
+                    locked={isRuleRecord}
                     onClick={() => go(0)}
-                    className="rounded-full px-2.5 py-1 font-medium transition hover:brightness-95"
                     style={{ background: KIND_COLORS[form.kind].bg, color: KIND_COLORS[form.kind].ink }}
                   >
                     {kindLabel(form.kind)}
-                  </button>
+                  </ContextChip>
                   <span className="text-ink-3">/</span>
-                  <button
-                    type="button"
-                    onClick={() => go(1)}
-                    className="rounded-full bg-surface-3 px-2.5 py-1 font-medium text-ink transition hover:bg-line"
-                  >
+                  <ContextChip locked={isRuleRecord} onClick={() => go(1)} className="bg-surface-3 text-ink">
                     {bucketLabel(form.bucket)}
-                  </button>
-                  {isRuleInstance ? <span className="text-ink-3">{t("fromRule")}</span> : null}
+                  </ContextChip>
+                  {isRuleRecord ? <span className="text-ink-3">{t("fromRule")}</span> : null}
                 </div>
 
                 {/* Amount */}
@@ -398,6 +517,16 @@ function Wizard({
                     />
                   </div>
                   {errors.amount ? <p className="mt-1.5 text-[12.5px] text-danger-ink">{tv(errors.amount)}</p> : null}
+                  {usableResult > 0 && String(usableResult) !== form.amount ? (
+                    <button
+                      type="button"
+                      onClick={() => set("amount", String(usableResult))}
+                      className="mt-1.5 flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[12px] font-medium text-ink-2 transition hover:bg-surface-2 hover:text-ink"
+                    >
+                      <Calculator className="h-3 w-3" />
+                      {t("useResult", { result: money(usableResult, { maximumFractionDigits: 2 }) })}
+                    </button>
+                  ) : null}
                 </div>
 
                 <Field label={t("title")} error={tv(errors.title)}>
@@ -450,31 +579,44 @@ function Wizard({
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label={t("date")} error={tv(errors.date)}>
-                    <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} invalid={!!errors.date} dir="ltr" />
-                    <div className="mt-1.5 flex gap-1.5">
-                      {[
-                        { label: tc("today"), v: todayISO() },
-                        { label: tc("yesterday"), v: toISODate(subDays(new Date(), 1)) },
-                      ].map((q) => (
-                        <button
-                          key={q.label}
-                          type="button"
-                          onClick={() => set("date", q.v)}
-                          className={cn(
-                            "rounded-md px-2 py-0.5 text-[11.5px] transition",
-                            form.date === q.v ? "bg-surface-3 text-ink" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
-                          )}
-                        >
-                          {q.label}
-                        </button>
-                      ))}
-                    </div>
+                  <Field
+                    label={isMonthly ? t("dueDay") : t("date")}
+                    error={tv(errors.date)}
+                    hint={dateLocked ? t("dateLocked") : billDay !== null ? t("comesBack", { day: billDay }) : undefined}
+                  >
+                    <Input
+                      type="date"
+                      value={form.date}
+                      onChange={(e) => set("date", e.target.value)}
+                      invalid={!!errors.date}
+                      dir="ltr"
+                      min={recordPeriod ? occurrence(recordPeriod, 1) : undefined}
+                      max={recordPeriod ? occurrence(recordPeriod, 31) : undefined}
+                      readOnly={dateLocked}
+                      className={cn(dateLocked && "bg-surface-2 text-ink-3")}
+                    />
+                    {quickDates.length > 0 ? (
+                      <div className="mt-1.5 flex gap-1.5">
+                        {quickDates.map((q) => (
+                          <button
+                            key={q.label}
+                            type="button"
+                            onClick={() => set("date", q.value)}
+                            className={cn(
+                              "rounded-md px-2 py-0.5 text-[11.5px] transition",
+                              form.date === q.value ? "bg-surface-3 text-ink" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
+                            )}
+                          >
+                            {q.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </Field>
                   <Field label={t("status")} hint={form.kind === "debit" ? t("statusHintDebit") : undefined}>
                     <div className="flex flex-wrap gap-1.5">
                       {statusOptions.map((s) => {
-                        const active = form.status === s;
+                        const active = status === s;
                         return (
                           <button
                             key={s}
@@ -494,6 +636,25 @@ function Wizard({
                     </div>
                   </Field>
                 </div>
+
+                {recordPeriod ? (
+                  <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-surface px-3.5 py-3">
+                    <input
+                      type="checkbox"
+                      checked={form.applyToRule}
+                      onChange={(e) => setApplyToRule(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium text-ink">{t("applyToRule")}</span>
+                      <span className="mt-0.5 block text-[12px] text-ink-3">
+                        {t(form.applyToRule ? "applyToRuleOn" : "applyToRuleOff", { month: monthName(recordPeriod) })}
+                      </span>
+                    </span>
+                  </label>
+                ) : null}
+
+                {offersAutoPay ? <AutoPaySwitch checked={form.autoPay} onChange={(autoPay) => set("autoPay", autoPay)} /> : null}
 
                 {showNote ? (
                   <Field label={t("note")} error={tv(errors.note)}>
@@ -516,7 +677,7 @@ function Wizard({
                       <div>
                         <p className="text-[16px] font-semibold text-ink">{form.title}</p>
                         <p className="text-[13px] text-ink-3">
-                          {category?.name ?? tc("uncategorized")} · {day(form.date)}
+                          {category?.name ?? tc("uncategorized")} · {day(billDate)}
                         </p>
                       </div>
                     </div>
@@ -536,12 +697,28 @@ function Wizard({
                     </div>
                     <div>
                       <p className="text-ink-3">{t("reviewStatus")}</p>
-                      <p className="font-medium text-ink">{statusLabel(form.status, form.kind)}</p>
+                      <p className="font-medium text-ink">{statusLabel(status, form.kind)}</p>
                     </div>
                   </div>
                   {form.note ? <p className="mt-3 rounded-lg bg-surface px-3 py-2 text-[13px] text-ink-2">{form.note}</p> : null}
                 </div>
-                <p className="text-[12.5px] text-ink-3">{ts(`${form.status}.note`)}</p>
+                {offersAutoPay && billDay !== null ? (
+                  <BillPreview
+                    status={status}
+                    autoPay={form.autoPay}
+                    date={billDate}
+                    moved={billDate !== form.date}
+                    day={billDay}
+                    today={today}
+                    onStartNextMonth={isEdit ? undefined : () => set("date", nextFullOccurrence(periodOf(billDate), billDay))}
+                  />
+                ) : recordPeriod ? (
+                  <p className="text-[12.5px] text-ink-3">
+                    {t(form.applyToRule ? "applyToRuleOn" : "applyToRuleOff", { month: monthName(recordPeriod) })}
+                  </p>
+                ) : (
+                  <p className="text-[12.5px] text-ink-3">{ts(`${status}.note`)}</p>
+                )}
               </div>
             ) : null}
           </motion.div>
@@ -551,7 +728,7 @@ function Wizard({
       {/* Footer */}
       <div className="flex items-center justify-between gap-3 border-t border-line bg-surface px-6 py-4">
         <div>
-          {step > 0 ? (
+          {step > firstStep ? (
             <Button variant="ghost" onClick={() => go((step - 1) as Step)} disabled={pending}>
               <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" /> {tc("back")}
             </Button>

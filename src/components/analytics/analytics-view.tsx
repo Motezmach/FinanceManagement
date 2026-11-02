@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowRight, Hourglass, Sparkles, Wallet } from "lucide-react";
+import { ArrowRight, Hourglass, PiggyBank, Sparkles, Wallet } from "lucide-react";
 import type { Analytics } from "@/lib/queries/analytics";
 import { BUCKET_META, type Bucket } from "@/lib/config/buckets";
 import { DynamicIcon } from "@/lib/config/icons";
@@ -19,7 +19,7 @@ import { CategoryDonut } from "@/components/charts/category-donut";
 import { useFormat } from "@/components/providers/settings-provider";
 
 export function AnalyticsView({ data, period }: { data: Analytics; period: string }) {
-  const { money, kindLabel, bucketLabel, month } = useFormat();
+  const { money, kindLabel, bucketLabel, statusLabel, month } = useFormat();
   const t = useTranslations("analytics");
   const tc = useTranslations("common");
   const isCurrent = period === currentPeriod();
@@ -27,9 +27,14 @@ export function AnalyticsView({ data, period }: { data: Analytics; period: strin
   const s = data.stats;
   const rate = Math.round(s.savingsRate * 100);
   const todayDay = isCurrent ? new Date().getDate() : undefined;
+  const receivedLabel = t("received", { period: periodLabel });
+  const spentLabel = t("spent", { period: periodLabel });
+  const netLabel = t("net", { period: periodLabel });
+  const dueLabel = t("dueLabel", { kind: kindLabel("credit").toLowerCase() });
 
   const pipeline = [
     { key: "wallet", label: t("balance"), amount: data.pipeline.wallet, icon: Wallet, kind: "net" as const, note: t("balanceNote") },
+    { key: "saved", label: statusLabel("saved", "credit"), amount: data.pipeline.saved, icon: PiggyBank, kind: undefined, note: t("savedNote") },
     { key: "pending", label: bucketLabel("pending"), amount: data.pipeline.pending, icon: Hourglass, kind: "debit" as const, note: t("pendingNote") },
     { key: "potential", label: bucketLabel("potential"), amount: data.pipeline.potential, icon: Sparkles, kind: undefined, note: t("potentialNote") },
   ];
@@ -39,18 +44,18 @@ export function AnalyticsView({ data, period }: { data: Analytics; period: strin
       {/* Headline stats */}
       <section className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="px-5 py-4">
-          <p className="text-[12.5px] font-medium text-ink-3">{t("received", { period: periodLabel })}</p>
-          <Money amount={s.received} kind="debit" className="font-display mt-1 block text-[26px] leading-none" />
+          <p className="text-[12.5px] font-medium text-ink-3">{receivedLabel}</p>
+          <Money amount={s.received} kind="debit" label={receivedLabel} className="font-display mt-1 block text-[26px] leading-none" />
           <p className="mt-1.5 text-[12px] text-ink-3">{t("avgPerMonth", { amount: money(s.avgMonthlyIncome, { compact: true }) })}</p>
         </Card>
         <Card className="px-5 py-4">
-          <p className="text-[12.5px] font-medium text-ink-3">{t("spent", { period: periodLabel })}</p>
-          <Money amount={s.spent} kind="credit" className="font-display mt-1 block text-[26px] leading-none" />
+          <p className="text-[12.5px] font-medium text-ink-3">{spentLabel}</p>
+          <Money amount={s.spent} kind="credit" label={spentLabel} className="font-display mt-1 block text-[26px] leading-none" />
           <p className="mt-1.5 text-[12px] text-ink-3">{t("avgPerMonth", { amount: money(s.avgMonthlySpend, { compact: true }) })}</p>
         </Card>
         <Card className="px-5 py-4">
-          <p className="text-[12.5px] font-medium text-ink-3">{t("net", { period: periodLabel })}</p>
-          <Money amount={s.net} kind="net" className="font-display mt-1 block text-[26px] leading-none" />
+          <p className="text-[12.5px] font-medium text-ink-3">{netLabel}</p>
+          <Money amount={s.net} kind="net" label={netLabel} className="font-display mt-1 block text-[26px] leading-none" />
           <p className="mt-1.5 text-[12px] text-ink-3">{t("settledEntries", { count: s.entryCount })}</p>
         </Card>
         <Card className="px-5 py-4">
@@ -110,24 +115,24 @@ export function AnalyticsView({ data, period }: { data: Analytics; period: strin
           <CardBody className="space-y-2 pt-4">
             {pipeline.map((p) => (
               <div key={p.key} className="flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-ink-2">
+                <span className={cn("flex h-9 w-9 items-center justify-center rounded-lg bg-surface", p.key === "saved" ? "text-saved-ink" : "text-ink-2")}>
                   <p.icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13.5px] font-medium text-ink">{p.label}</p>
                   <p className="text-[12px] text-ink-3">{p.note}</p>
                 </div>
-                <Money amount={p.amount} kind={p.kind} className="text-[15px] font-semibold" />
+                <Money amount={p.amount} kind={p.kind} label={p.label} className="text-[15px] font-semibold" />
               </div>
             ))}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="rounded-xl border border-line px-3 py-2.5">
-                <p className="text-[12px] text-ink-3">{t("dueLabel", { kind: kindLabel("credit").toLowerCase() })}</p>
-                <Money amount={data.pipeline.due} kind="credit" className="text-[15px] font-semibold" />
+                <p className="text-[12px] text-ink-3">{dueLabel}</p>
+                <Money amount={data.pipeline.due} kind="credit" label={dueLabel} className="text-[15px] font-semibold" />
               </div>
               <div className="rounded-xl border border-line px-3 py-2.5">
                 <p className="text-[12px] text-ink-3">{t("plannedLabel")}</p>
-                <Money amount={data.pipeline.planned} muted className="text-[15px] font-semibold" />
+                <Money amount={data.pipeline.planned} muted label={t("plannedLabel")} className="text-[15px] font-semibold" />
               </div>
             </div>
           </CardBody>
@@ -152,7 +157,7 @@ export function AnalyticsView({ data, period }: { data: Analytics; period: strin
                       {v.settled !== v.total ? ` ${t("settledSuffix", { amount: money(v.settled, { compact: true }) })}` : ""}
                     </p>
                   </div>
-                  <Money amount={v.total} className="text-[14px] font-semibold" />
+                  <Money amount={v.total} label={bucketLabel(b)} className="text-[14px] font-semibold" />
                 </Link>
               );
             })}
@@ -176,7 +181,7 @@ export function AnalyticsView({ data, period }: { data: Analytics; period: strin
                       {e.category?.name ?? tc("uncategorized")} · {bucketLabel(e.bucket)}
                     </p>
                   </div>
-                  <Money amount={e.amount} kind="credit" signed className="text-[14px] font-medium" />
+                  <Money amount={e.amount} kind="credit" signed label={e.title} className="text-[14px] font-medium" />
                 </li>
               ))}
             </ol>

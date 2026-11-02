@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -29,8 +30,12 @@ export const bucketEnum = pgEnum("entry_bucket", [
   "daily", // credit · everyday spending
 ]);
 
-// Lifecycle of an entry. settled = real money moved.
-export const statusEnum = pgEnum("entry_status", ["settled", "pending", "planned"]);
+// Lifecycle of an entry. settled = real money moved. saved = a fixed bill's money is
+// still in the balance but kept for that bill until its month ends.
+export const statusEnum = pgEnum("entry_status", ["settled", "pending", "planned", "saved"]);
+
+/** user: made by the user. adoption: made by the one-time move, not reviewed yet. adoption_ok: reviewed and kept. */
+export type RuleSource = "user" | "adoption" | "adoption_ok";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -45,6 +50,9 @@ export const users = pgTable("users", {
   totpPendingSecretEnc: text("totp_pending_secret_enc"),
   totpLastStep: integer("totp_last_step"), // replay protection
   settings: jsonb("settings").$type<Partial<UserSettings>>().notNull().default({}),
+  // Daily gate for the fixed-monthly sync; NULL means "sync on the next render".
+  fixedSyncedOn: date("fixed_synced_on"),
+  fixedModelVersion: integer("fixed_model_version").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -120,6 +128,9 @@ export const recurringRules = pgTable(
     isActive: boolean("is_active").notNull().default(true),
     startsOn: date("starts_on").notNull().default(sql`CURRENT_DATE`),
     endsOn: date("ends_on"),
+    // Off by default: an untouched Due bill only pays itself when the user asked for that.
+    autoPay: boolean("auto_pay").notNull().default(false),
+    source: text("source").$type<RuleSource>().notNull().default("user"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("rules_user_idx").on(t.userId)],
@@ -143,6 +154,12 @@ export const entries = pgTable(
     // Set when the entry was materialized from a recurring rule for a given month.
     ruleId: uuid("rule_id").references(() => recurringRules.id, { onDelete: "set null" }),
     period: text("period"), // "YYYY-MM"
+    savedAt: timestamp("saved_at", { withTimezone: true }),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+    autoPaid: boolean("auto_paid").notNull().default(false),
+    autoPaidSeen: boolean("auto_paid_seen").notNull().default(false),
+    // The user took this bill back: never settle it automatically.
+    autoPayHold: boolean("auto_pay_hold").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -151,6 +168,25 @@ export const entries = pgTable(
     index("entries_user_kind_bucket_idx").on(t.userId, t.kind, t.bucket),
     index("entries_category_idx").on(t.categoryId),
     uniqueIndex("entries_rule_period_unique").on(t.ruleId, t.period),
+  ],
+);
+
+/** Months a rule must not place again: skipped by the user or missed during an absence. */
+export const ruleSkips = pgTable(
+  "rule_skips",
+  {
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => recurringRules.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    period: text("period").notNull(), // "YYYY-MM"
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ name: "rule_skips_pkey", columns: [t.ruleId, t.period] }),
+    index("rule_skips_user_idx").on(t.userId),
   ],
 );
 
@@ -181,3 +217,4 @@ export type User = typeof users.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Entry = typeof entries.$inferSelect;
 export type RecurringRule = typeof recurringRules.$inferSelect;
+export type RuleSkip = typeof ruleSkips.$inferSelect;

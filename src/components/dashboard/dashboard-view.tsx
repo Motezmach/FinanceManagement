@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarClock, Clock, Plus, Sparkles } from "lucide-react";
+import { parseISO } from "date-fns";
+import { AlertTriangle, ArrowDownLeft, ArrowRight, ArrowUpRight, Clock, Plus, Scale, Sparkles, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import type { Dashboard } from "@/lib/queries/dashboard";
-import { currentPeriod } from "@/lib/dates";
+import type { Kind } from "@/lib/config/buckets";
+import { periodOf } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/ui/money";
-import { Badge } from "@/components/ui/badge";
 import { EntryList } from "@/components/entry/entry-list";
 import { EntryRow } from "@/components/entry/entry-row";
 import { TrendChart } from "@/components/charts/trend-chart";
-import { CategoryDonut } from "@/components/charts/category-donut";
 import { MiniCalendar } from "@/components/calendar/mini-calendar";
+import { AutoPayBanner } from "@/components/fixed/autopay-banner";
 import { useEntryModal } from "@/components/providers/entry-modal-provider";
 import { useFormat } from "@/components/providers/settings-provider";
+import { DuePlannedCard } from "./due-planned-card";
 
 function greetingKey() {
   const h = new Date().getHours();
@@ -42,13 +44,13 @@ export function DashboardView({
   const { kindLabel, money, month, longDate } = useFormat();
   const t = useTranslations("dashboard");
   const tc = useTranslations("common");
-  const isCurrent = period === currentPeriod();
+  const isCurrent = period === periodOf(data.today);
   const periodLabel = isCurrent ? tc("thisMonth") : month(period);
-  const today = new Date();
+  const hasBills = data.dueOut > 0 || data.billsSaved > 0;
 
-  const tiles = [
-    { label: t("received", { period: periodLabel }), amount: data.period.received, kind: "debit" as const, icon: ArrowDownLeft, href: "/debits" },
-    { label: t("spent", { period: periodLabel }), amount: data.period.spent, kind: "credit" as const, icon: ArrowUpRight, href: "/credits" },
+  const tiles: { label: string; amount: number; kind?: Kind | "net"; sub?: string; icon: LucideIcon; href: string }[] = [
+    { label: t("received", { period: periodLabel }), amount: data.period.received, kind: "debit", icon: ArrowDownLeft, href: "/debits" },
+    { label: t("spent", { period: periodLabel }), amount: data.period.spent, kind: "credit", icon: ArrowUpRight, href: "/credits" },
     {
       label: t("pendingIncome"),
       amount: data.pendingIn,
@@ -57,16 +59,19 @@ export function DashboardView({
       href: "/debits",
     },
     {
-      label: t("dueAndPlanned"),
-      amount: data.dueOut,
-      sub: data.plannedOut ? t("plannedPlus", { amount: money(data.plannedOut, { compact: true }) }) : t("dueAndPlannedSub"),
-      icon: CalendarClock,
-      href: "/credits",
+      label: isCurrent ? t("netThisMonth") : t("netMonth", { month: month(period) }),
+      amount: data.period.net,
+      kind: "net",
+      sub: t("netSub"),
+      icon: Scale,
+      href: "/analytics",
     },
   ];
 
   return (
     <div className="space-y-6">
+      <AutoPayBanner items={data.autoPaidUnseen} total={data.autoPaidTotal} />
+
       {welcome ? (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -92,24 +97,44 @@ export function DashboardView({
           />
           <CardBody className="relative p-6 sm:p-7">
             <p className="text-[13px] text-ink-3">
-              <span className="text-ink-2">{t("greetingLine", { greeting: t(`greeting.${greetingKey()}`), name })}</span> · {longDate(today)}
+              <span className="text-ink-2">{t("greetingLine", { greeting: t(`greeting.${greetingKey()}`), name })}</span> ·{" "}
+              {longDate(parseISO(data.today))}
             </p>
-            <p className="mt-5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-3">{t("balance")}</p>
+            <p className="mt-5 text-[12.5px] font-medium uppercase tracking-[0.12em] text-ink-3 rtl:tracking-normal">{t("balance")}</p>
             <Money
               amount={data.balance}
               kind={data.balance < 0 ? "net" : undefined}
+              label={t("balance")}
               className="font-display mt-1 block text-[44px] leading-none sm:text-[52px]"
             />
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
-              <span>
-                {t("afterPending")} <Money amount={data.projected} kind="net" className="font-medium" />
-              </span>
-              <span className="hidden h-3 w-px bg-line-strong sm:block" />
-              <span>
-                {isCurrent ? t("netThisMonth") : t("netMonth", { month: month(period) })}{" "}
-                <Money amount={data.period.net} kind="net" className="font-medium" />
-              </span>
+            <div className="mt-5 grid max-w-md grid-cols-2 gap-2.5">
+              <div className="min-w-0 rounded-xl bg-surface-2 px-3.5 py-3">
+                <p className="truncate text-[12px] font-medium text-ink-3">{t("freeToSpend")}</p>
+                <Money
+                  amount={data.freeToSpend}
+                  kind={data.freeToSpend < 0 ? "net" : undefined}
+                  label={t("freeToSpend")}
+                  className="font-display mt-1 block truncate text-[20px] leading-none sm:text-[22px]"
+                />
+              </div>
+              <Link href="/credits/savings" className="min-w-0 rounded-xl bg-saved-soft px-3.5 py-3 transition hover:brightness-95">
+                <p className="flex items-center justify-between gap-2 text-[12px] font-medium text-saved-ink">
+                  <span className="truncate">{t("inSavings")}</span>
+                  <ArrowRight className="h-3 w-3 shrink-0 rtl:-scale-x-100" />
+                </p>
+                <Money
+                  amount={data.billsSaved}
+                  label={t("inSavings")}
+                  className="font-display mt-1 block truncate text-[20px] leading-none text-saved-ink sm:text-[22px]"
+                />
+              </Link>
             </div>
+            {data.shortfall > 0 && hasBills ? (
+              <p className="mt-3 flex max-w-md items-center gap-2 rounded-xl bg-warn-soft px-3.5 py-2 text-[13px] font-medium text-warn-ink">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {t("heroShortfall", { amount: money(data.shortfall) })}
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-wrap gap-2">
               <Button onClick={() => openAdd({ kind: "debit" })}>
                 <ArrowDownLeft className="h-4 w-4" /> {t("addDebit", { label: kindLabel("debit").toLowerCase() })}
@@ -165,82 +190,69 @@ export function DashboardView({
                 <p className="text-[12.5px] font-medium text-ink-3">{tile.label}</p>
                 <tile.icon className={cn("h-4 w-4", tile.kind === "debit" ? "text-inflow" : tile.kind === "credit" ? "text-outflow" : "text-ink-3")} />
               </div>
-              <Money amount={tile.amount} kind={tile.kind} className="font-display mt-2 block text-[26px] leading-none" />
+              <Money amount={tile.amount} kind={tile.kind} label={tile.label} className="font-display mt-2 block text-[26px] leading-none" />
               <p className="mt-1.5 text-[12px] text-ink-3">{tile.sub ?? " "}</p>
             </Card>
           </Link>
         ))}
       </section>
 
-      {/* Charts */}
-      <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <Card>
-          <CardHeader title={t("inVsOut")} description={t("inVsOutSub")} />
-          <CardBody className="pt-4">
-            <TrendChart data={data.series} />
-            <div className="mt-2 flex items-center gap-4 text-[12px] text-ink-3">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-inflow" /> {kindLabel("debit")}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-outflow" /> {kindLabel("credit")}
-              </span>
-            </div>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader
-            title={t("whereItWent")}
-            description={t("whereItWentSub", { label: kindLabel("credit"), period: periodLabel })}
-            action={
-              <Link href="/analytics" className="text-[12.5px] text-ink-3 hover:text-ink">
-                {t("analyticsLink")} <ArrowRight className="inline h-3 w-3 rtl:-scale-x-100" />
-              </Link>
-            }
-          />
-          <CardBody className="pt-4">
-            <CategoryDonut data={data.spendByCategory} total={data.period.spent} centerLabel="spent" />
-          </CardBody>
-        </Card>
+      {/* What is owed, next to where the money has been going and what is on its way */}
+      <section className="grid gap-5 lg:grid-cols-[1.25fr_1fr]">
+        <DuePlannedCard data={data} period={period} />
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card>
+            <CardHeader title={t("inVsOut")} description={t("inVsOutSub")} />
+            <CardBody className="pt-4">
+              <TrendChart data={data.series} />
+              <div className="mt-2 flex items-center gap-4 text-[12px] text-ink-3">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-inflow" /> {kindLabel("debit")}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-outflow" /> {kindLabel("credit")}
+                </span>
+              </div>
+            </CardBody>
+          </Card>
+          <Card className="flex-1">
+            <CardHeader title={t("comingUp")} description={t("comingUpSub")} />
+            <CardBody className="pt-4">
+              {data.upcoming.length ? (
+                <div className="-mx-2">
+                  {data.upcoming.map((e) => (
+                    <EntryRow key={e.id} entry={e} compact />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <p className="text-[14px] font-medium text-ink">{t("allClear")}</p>
+                  <p className="mt-1 text-[13px] text-ink-3">{t("allClearSub")}</p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
       </section>
 
-      {/* Lists */}
-      <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <Card>
-          <CardHeader title={t("recent")} description={t("recentSub")} />
-          <CardBody className="pt-4">
-            <EntryList
-              entries={data.recent}
-              groupByDate={false}
-              showBucket
-              emptyTitle={t("emptyTitle")}
-              emptyDescription={t("emptySub")}
-              emptyAction={
-                <Button size="sm" onClick={() => openAdd({ kind: "debit", bucket: "wallet" })}>
-                  <Plus className="h-3.5 w-3.5" /> {t("addWallet")}
-                </Button>
-              }
-            />
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader title={t("comingUp")} description={t("comingUpSub")} />
-          <CardBody className="pt-4">
-            {data.upcoming.length ? (
-              <div className="-mx-2">
-                {data.upcoming.map((e) => (
-                  <EntryRow key={e.id} entry={e} compact />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center py-6 text-center">
-                <Badge tone="inflow">{t("allClear")}</Badge>
-                <p className="mt-2 text-[13px] text-ink-3">{t("allClearSub")}</p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </section>
+      {/* Recent */}
+      <Card>
+        <CardHeader title={t("recent")} description={t("recentSub")} />
+        <CardBody className="pt-4">
+          <EntryList
+            entries={data.recent}
+            groupByDate={false}
+            showBucket
+            emptyTitle={t("emptyTitle")}
+            emptyDescription={t("emptySub")}
+            emptyAction={
+              <Button size="sm" onClick={() => openAdd({ kind: "debit", bucket: "wallet" })}>
+                <Plus className="h-3.5 w-3.5" /> {t("addWallet")}
+              </Button>
+            }
+          />
+        </CardBody>
+      </Card>
     </div>
   );
 }

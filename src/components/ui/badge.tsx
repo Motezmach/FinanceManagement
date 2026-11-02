@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export type BadgeTone = "neutral" | "inflow" | "outflow" | "warn" | "danger" | "accent" | "outline";
+export type BadgeTone = "neutral" | "inflow" | "outflow" | "warn" | "danger" | "accent" | "saved" | "outline";
 
 const tones: Record<BadgeTone, string> = {
   neutral: "bg-surface-3 text-ink-2",
@@ -10,6 +10,7 @@ const tones: Record<BadgeTone, string> = {
   warn: "bg-warn-soft text-warn-ink",
   danger: "bg-danger-soft text-danger-ink",
   accent: "bg-accent-soft text-accent-ink",
+  saved: "bg-saved-soft text-saved-ink",
   outline: "border border-line text-ink-2 bg-transparent",
 };
 

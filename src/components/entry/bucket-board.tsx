@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
@@ -18,11 +19,12 @@ import { useFormat } from "@/components/providers/settings-provider";
 
 export type BoardSection = {
   bucket: Bucket;
-  entries: EntryWithCategory[];
   total: number;
   count: number;
   scope: string; // e.g. "this month" or "all open"
-  listTitle?: string;
+  /** Replaces the entry list. */
+  panel?: ReactNode;
+  entries?: EntryWithCategory[];
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -34,37 +36,48 @@ export function BucketBoard({
   sections,
   summary,
   initialBucket,
-  extra,
+  linkCards,
 }: {
   kind: Kind;
   sections: BoardSection[];
   summary: SummaryTile[];
   initialBucket?: Bucket;
-  extra?: Partial<Record<Bucket, ReactNode>>;
+  /** Cards after the tabs that go to another page. */
+  linkCards?: ReactNode;
 }) {
   const { openAdd } = useEntryModal();
   const { bucketLabel, bucketDescription, bucketHint } = useFormat();
   const t = useTranslations("board");
   const tc = useTranslations("common");
-  const [active, setActive] = useState<Bucket>(initialBucket ?? BUCKETS_BY_KIND[kind][0]);
+  const params = useSearchParams();
+  const requested = sections.find((s) => s.bucket === params.get("bucket"))?.bucket;
+  const active = requested ?? initialBucket ?? BUCKETS_BY_KIND[kind][0];
   const section = sections.find((s) => s.bucket === active) ?? sections[0];
   const colors = KIND_COLORS[kind];
+  const gridColumns = kind === "credit" ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3";
+
+  // Every tab is already on the page, so switching only updates the URL.
+  const selectTab = (bucket: Bucket) => {
+    const next = new URLSearchParams(params.toString());
+    next.set("bucket", bucket);
+    window.history.replaceState(null, "", `?${next.toString()}`);
+  };
 
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="stagger grid gap-3 sm:grid-cols-3">
+      <div className={cn("stagger grid gap-3", gridColumns)}>
         {summary.map((tile) => (
           <Card key={tile.label} className="px-5 py-4">
             <p className="text-[12.5px] font-medium text-ink-3">{tile.label}</p>
-            <Money amount={tile.amount} kind={tile.kind} className="font-display mt-1 block text-[24px] leading-none" />
+            <Money amount={tile.amount} kind={tile.kind} label={tile.label} className="font-display mt-1 block text-[24px] leading-none" />
             {tile.sub ? <p className="mt-1.5 text-[12px] text-ink-3">{tile.sub}</p> : null}
           </Card>
         ))}
       </div>
 
       {/* Bucket tabs */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={cn("grid gap-3", gridColumns)}>
         {sections.map((s) => {
           const meta = BUCKET_META[s.bucket];
           const isActive = s.bucket === active;
@@ -72,7 +85,7 @@ export function BucketBoard({
             <button
               key={s.bucket}
               type="button"
-              onClick={() => setActive(s.bucket)}
+              onClick={() => selectTab(s.bucket)}
               className={cn(
                 "relative flex items-center gap-3 rounded-xl2 border p-4 text-start transition",
                 isActive ? "border-line-strong bg-surface shadow-card" : "border-line bg-surface/60 hover:bg-surface",
@@ -99,12 +112,13 @@ export function BucketBoard({
                 </span>
                 <span className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-[12px] text-ink-3">{s.scope}</span>
-                  <Money amount={s.total} className="text-[13px] font-medium" />
+                  <Money amount={s.total} label={bucketLabel(s.bucket)} className="text-[13px] font-medium" />
                 </span>
               </span>
             </button>
           );
         })}
+        {linkCards}
       </div>
 
       {/* Section content */}
@@ -127,21 +141,19 @@ export function BucketBoard({
                 <Plus className="h-3.5 w-3.5" /> {tc("add")}
               </Button>
             </div>
-            {extra?.[section.bucket] ? <div className="px-5 pt-4">{extra[section.bucket]}</div> : null}
             <CardBody className="pt-4">
-              {section.listTitle ? (
-                <p className="mb-2 text-[12px] font-medium uppercase tracking-wider text-ink-3">{section.listTitle}</p>
-              ) : null}
-              <EntryList
-                entries={section.entries}
-                emptyTitle={section.emptyTitle ?? t("noEntries", { section: bucketLabel(section.bucket).toLowerCase() })}
-                emptyDescription={section.emptyDescription ?? bucketDescription(section.bucket)}
-                emptyAction={
-                  <Button size="sm" onClick={() => openAdd({ kind, bucket: section.bucket })}>
-                    <Plus className="h-3.5 w-3.5" /> {t("addFirst")}
-                  </Button>
-                }
-              />
+              {section.panel ?? (
+                <EntryList
+                  entries={section.entries ?? []}
+                  emptyTitle={section.emptyTitle ?? t("noEntries", { section: bucketLabel(section.bucket).toLowerCase() })}
+                  emptyDescription={section.emptyDescription ?? bucketDescription(section.bucket)}
+                  emptyAction={
+                    <Button size="sm" onClick={() => openAdd({ kind, bucket: section.bucket })}>
+                      <Plus className="h-3.5 w-3.5" /> {t("addFirst")}
+                    </Button>
+                  }
+                />
+              )}
             </CardBody>
           </Card>
         </motion.div>

@@ -4,15 +4,25 @@ import { PALETTE_KEYS } from "@/lib/config/palette";
 import { ICON_KEYS } from "@/lib/config/icons";
 import { CURRENCIES } from "@/lib/config/settings";
 import { LOCALES } from "@/lib/i18n/locales";
+import { round2 } from "@/lib/utils";
 
 // Every message is a translation key under "validation"; the UI resolves it.
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "validation.date");
+const isoDate = z.iso
+  .date("validation.date")
+  .refine((value) => value >= "2000-01-01" && value <= "2100-12-31", "validation.date");
 
 export const amountSchema = z.coerce
   .number({ message: "validation.amount" })
-  .positive("validation.amountPositive")
-  .max(999_999_999, "validation.amountLarge");
+  .transform(round2)
+  .pipe(
+    z
+      .number()
+      .min(0.01, "validation.amountPositive")
+      .max(999_999_999, "validation.amountLarge"),
+  );
 
+// Keep this a plain object: entryUpdateSchema calls .partial(), which throws at module
+// load when the object carries a refine. The saved-status guard lives in statusPatch.
 export const entrySchema = z.object({
   kind: z.enum(KINDS),
   bucket: z.enum(BUCKETS),
@@ -22,10 +32,13 @@ export const entrySchema = z.object({
   categoryId: z.string().uuid("validation.category"),
   date: isoDate,
   note: z.string().trim().max(500, "validation.tooLong").optional().or(z.literal("")),
+  autoPay: z.boolean().optional(),
 });
 export type EntryInput = z.infer<typeof entrySchema>;
 
-export const entryUpdateSchema = entrySchema.partial().extend({ id: z.string().uuid() });
+export const entryUpdateSchema = entrySchema
+  .partial()
+  .extend({ id: z.string().uuid(), applyToRule: z.boolean().optional() });
 
 export const categorySchema = z.object({
   kind: z.enum(KINDS),
@@ -41,6 +54,7 @@ export const ruleSchema = z.object({
   categoryId: z.string().uuid("validation.category"),
   dayOfMonth: z.coerce.number().int().min(1, "validation.day").max(31, "validation.day"),
   note: z.string().trim().max(500, "validation.tooLong").optional().or(z.literal("")),
+  autoPay: z.boolean().optional(),
 });
 export type RuleInput = z.infer<typeof ruleSchema>;
 

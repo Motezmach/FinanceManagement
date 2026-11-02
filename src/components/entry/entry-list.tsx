@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Inbox } from "lucide-react";
 import type { EntryWithCategory } from "@/lib/queries/entries";
-import { todayISO } from "@/lib/dates";
 import { EntryRow } from "./entry-row";
 import { EmptyState } from "@/components/ui/empty";
 import { Money } from "@/components/ui/money";
+import { useEntryModal } from "@/components/providers/entry-modal-provider";
 import { useFormat } from "@/components/providers/settings-provider";
 
 export function EntryList({
@@ -27,6 +27,7 @@ export function EntryList({
   emptyDescription?: string;
   emptyAction?: ReactNode;
 }) {
+  const { today } = useEntryModal();
   const t = useTranslations();
   const { day } = useFormat();
 
@@ -52,7 +53,6 @@ export function EntryList({
     );
   }
 
-  const today = todayISO();
   const groups = new Map<string, EntryWithCategory[]>();
   for (const e of entries) {
     if (!groups.has(e.date)) groups.set(e.date, []);
@@ -66,13 +66,12 @@ export function EntryList({
           (a, e) => (e.status === "settled" ? a + (e.kind === "debit" ? e.amount : -e.amount) : a),
           0,
         );
+        const heading = date === today ? t("common.today") : day(date);
         return (
           <section key={date}>
             <header className="mb-1 flex items-center justify-between px-2">
-              <h4 className="text-[12px] font-medium uppercase tracking-wider text-ink-3">
-                {date === today ? t("common.today") : day(date)}
-              </h4>
-              {net !== 0 ? <Money amount={net} kind="net" className="text-[12px]" /> : null}
+              <h4 className="text-[12px] font-medium uppercase tracking-wider text-ink-3">{heading}</h4>
+              {net !== 0 ? <Money amount={net} kind="net" label={heading} className="text-[12px]" /> : null}
             </header>
             <div className="-mx-2">
               {list.map((e) => (

@@ -7,6 +7,8 @@ import type { Kind } from "@/lib/config/buckets";
 /**
  * Formats an amount with the user's currency. Pass `kind` to color it
  * (debit = inflow green, credit = outflow clay) and `signed` to prefix +/−.
+ * The `data-calc-*` attributes let the calculator pick the exact amount off the page,
+ * even when the display is rounded or compact; `label` names it on the calculator's tape.
  */
 export function Money({
   amount,
@@ -14,6 +16,7 @@ export function Money({
   signed,
   compact,
   muted,
+  label,
   className,
 }: {
   amount: number;
@@ -21,6 +24,7 @@ export function Money({
   signed?: boolean;
   compact?: boolean;
   muted?: boolean;
+  label?: string;
   className?: string;
 }) {
   const { money } = useFormat();
@@ -41,8 +45,18 @@ export function Money({
               : "text-ink"
             : "text-ink";
 
+  // A credit's minus sign is only how money out is displayed. A net or an overdrawn balance really is negative.
+  const keepsSign = kind === "net" || (kind === undefined && value < 0);
+
   return (
-    <span className={cn("tabular", tone, className)}>
+    <span
+      dir="ltr"
+      data-calc-amount={value}
+      data-calc-label={label}
+      data-calc-net={keepsSign ? "" : undefined}
+      // Digits read left to right, but a block amount still lines up with its label in Arabic.
+      className={cn("tabular rtl:text-right", tone, className)}
+    >
       {money(value, { signed: signed || kind === "net", compact })}
     </span>
   );

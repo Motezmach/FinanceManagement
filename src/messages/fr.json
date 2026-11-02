@@ -1,8 +1,6 @@
 {
   "common": {
-    "appName": "Ledger",
     "cancel": "Annuler",
-    "save": "Enregistrer",
     "delete": "Supprimer",
     "edit": "Modifier",
     "close": "Fermer",
@@ -24,13 +22,8 @@
     "manage": "Gérer",
     "moreActions": "Plus d'actions",
     "tryAgain": "Réessayer",
-    "language": "Langue",
-    "settled": "réglé",
-    "pending": "en attente",
-    "planned": "prévu",
     "open": "en cours",
-    "recurring": "Récurrent",
-    "month": "mois"
+    "recurring": "Récurrent"
   },
   "nav": {
     "overview": "Aperçu",
@@ -40,24 +33,82 @@
     "settings": "Paramètres",
     "newEntry": "Nouvelle opération",
     "logOut": "Se déconnecter",
-    "theme": { "light": "Clair", "system": "Système", "dark": "Sombre" }
+    "theme": {
+      "light": "Clair",
+      "system": "Système",
+      "dark": "Sombre"
+    },
+    "savings": "Épargne"
   },
   "kinds": {
-    "debit": { "label": "Débit", "sub": "Argent entrant", "description": "Paiements reçus, travaux en cours, votre portefeuille." },
-    "credit": { "label": "Crédit", "sub": "Argent sortant", "description": "Factures, dépenses du quotidien et achats prévus." }
+    "debit": {
+      "label": "Débit",
+      "sub": "Argent entrant",
+      "description": "Paiements reçus, travaux en cours, votre portefeuille."
+    },
+    "credit": {
+      "label": "Crédit",
+      "sub": "Argent sortant",
+      "description": "Factures, dépenses du quotidien et achats prévus."
+    }
   },
   "buckets": {
-    "wallet": { "label": "Portefeuille actuel", "description": "L'argent que vous avez déjà en main.", "hint": "Paiements reçus, espèces, solde disponible aujourd'hui." },
-    "pending": { "label": "Travail en attente", "description": "Travail livré, paiement en route.", "hint": "Factures envoyées, missions terminées mais pas encore payées." },
-    "potential": { "label": "Travail potentiel", "description": "Des opportunités qui peuvent devenir des revenus.", "hint": "Pistes, devis, projets en discussion." },
-    "fixed": { "label": "Fixe mensuel", "description": "Obligations récurrentes dues chaque mois.", "hint": "Loyer, abonnements, crédits, assurances." },
-    "optional": { "label": "Optionnel", "description": "Dépenses facultatives que vous pouvez planifier ou ignorer.", "hint": "Envies, améliorations, plaisirs, achats ponctuels." },
-    "daily": { "label": "Quotidien", "description": "Les dépenses de tous les jours, au fil de l'eau.", "hint": "Courses, café, transport, déjeuner. Le choix par défaut pour un crédit." }
+    "wallet": {
+      "label": "Portefeuille actuel",
+      "description": "L'argent que vous avez déjà en main.",
+      "hint": "Paiements reçus, espèces, solde disponible aujourd'hui."
+    },
+    "pending": {
+      "label": "Travail en attente",
+      "description": "Travail livré, paiement en route.",
+      "hint": "Factures envoyées, missions terminées mais pas encore payées."
+    },
+    "potential": {
+      "label": "Travail potentiel",
+      "description": "Des opportunités qui peuvent devenir des revenus.",
+      "hint": "Pistes, devis, projets en discussion."
+    },
+    "fixed": {
+      "label": "Fixe mensuel",
+      "description": "Obligations récurrentes dues chaque mois.",
+      "hint": "Loyer, abonnements, crédits, assurances."
+    },
+    "optional": {
+      "label": "Optionnel",
+      "description": "Dépenses facultatives que vous pouvez planifier ou ignorer.",
+      "hint": "Envies, améliorations, plaisirs, achats ponctuels."
+    },
+    "daily": {
+      "label": "Quotidien",
+      "description": "Les dépenses de tous les jours, au fil de l'eau.",
+      "hint": "Courses, café, transport, déjeuner. Le choix par défaut pour un crédit."
+    }
   },
   "status": {
-    "settled": { "label": "Réglé", "debit": "Reçu", "credit": "Payé", "note": "Compte immédiatement dans votre solde." },
-    "pending": { "label": "En attente", "debit": "Paiement attendu", "credit": "À payer", "note": "Affiché en attente jusqu'à ce que vous le marquiez réglé." },
-    "planned": { "label": "Prévu", "debit": "Potentiel", "credit": "Prévu", "note": "Les éléments prévus ne touchent jamais votre solde avant d'être réglés." }
+    "settled": {
+      "label": "Réglé",
+      "debit": "Reçu",
+      "credit": "Payé",
+      "note": "Compte immédiatement dans votre solde."
+    },
+    "pending": {
+      "label": "En attente",
+      "debit": "Paiement attendu",
+      "credit": "À payer",
+      "note": "Affiché en attente jusqu'à ce que vous le marquiez réglé."
+    },
+    "planned": {
+      "label": "Prévu",
+      "debit": "Potentiel",
+      "credit": "Prévu",
+      "note": "Les éléments prévus ne touchent jamais votre solde avant d'être réglés."
+    },
+    "saved": {
+      "label": "En épargne",
+      "debit": "En épargne",
+      "credit": "En épargne",
+      "note": "Toujours dans votre solde, gardé pour cette facture. Elle sera marquée payée à sa date de renouvellement."
+    }
   },
   "auth": {
     "login": {
@@ -124,7 +175,11 @@
     "weakRepeat": "Répéter un seul caractère est facile à deviner.",
     "weakPattern": "Les suites de clavier sont faciles à deviner.",
     "weakEmail": "N'utilisez pas une partie de votre e-mail dans votre mot de passe.",
-    "weakName": "N'utilisez pas votre nom dans votre mot de passe."
+    "weakName": "N'utilisez pas votre nom dans votre mot de passe.",
+    "savedOtherMonth": "Un autre mois de cette facture est déjà en épargne. Marquez-le d’abord comme payé ou remettez-le à payer.",
+    "savedNeedsBill": "Seules les factures mensuelles peuvent aller en épargne.",
+    "savedCycleOver": "Le mois de cette facture est terminé : elle ne peut plus aller en épargne. Marquez-la plutôt comme payée.",
+    "plannedNotForBills": "Une facture mensuelle peut être À payer, En épargne ou Payée, mais pas Prévue."
   },
   "server": {
     "registrationClosed": "Les inscriptions sont fermées sur cette instance.",
@@ -147,22 +202,35 @@
     "fixedNeedsCredit": "Les paiements fixes demandent une catégorie de crédit",
     "unknownLocale": "Format régional inconnu",
     "unknownTheme": "Thème inconnu",
-    "unknownLanguage": "Langue inconnue",
     "twoFactorAlreadyOn": "La double authentification est déjà activée.",
     "twoFactorNotOn": "La double authentification n'est pas activée.",
     "startSetupAgain": "Relancez la configuration.",
-    "signOutFailed": "Impossible de déconnecter les autres appareils"
+    "signOutFailed": "Impossible de déconnecter les autres appareils",
+    "billChanged": "Cette facture vient de changer. Vérifiez-la et réessayez.",
+    "ruleExists": "Vous avez déjà cette facture mensuelle le même jour.",
+    "ruleNotFound": "Cette facture mensuelle n’existe plus.",
+    "rulePaused": "Reprenez d’abord cette facture.",
+    "ruleLocked": "Une facture mensuelle reste une charge fixe. Supprimez sa règle pour en changer le type.",
+    "alreadyMonthly": "Cette opération se répète déjà chaque mois.",
+    "tooManyRules": "Vous pouvez avoir jusqu’à 200 factures mensuelles actives. Mettez-en une en pause ou supprimez-en une d’abord.",
+    "dateTooFar": "Choisissez une date dans les 24 prochains mois.",
+    "dateOutsideMonth": "Gardez cette date dans le mois de la facture.",
+    "dateNeedsApply": "Changer le jour modifie aussi les mois à venir. Activez l’option pour les mettre à jour."
   },
   "dashboard": {
     "eyebrow": "Aperçu",
     "hello": "Bonjour, {name}",
-    "greeting": { "night": "Encore debout", "morning": "Bonjour", "afternoon": "Bon après-midi", "evening": "Bonsoir" },
+    "greeting": {
+      "night": "Encore debout",
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir"
+    },
     "greetingLine": "{greeting}, {name}",
     "welcome": "Bienvenue, {name}. Votre ledger est prêt avec un jeu de catégories de départ. Appuyez sur <kbd>N</kbd> à tout moment pour ajouter une opération, et commencez par ce qu'il y a dans votre portefeuille.",
     "balance": "Solde",
-    "afterPending": "Après attentes et échéances :",
-    "netThisMonth": "Net ce mois-ci :",
-    "netMonth": "Net {month} :",
+    "netThisMonth": "Net ce mois-ci",
+    "netMonth": "Net {month}",
     "addDebit": "Ajouter un {label}",
     "addCredit": "Ajouter un {label}",
     "today": "Aujourd'hui",
@@ -175,23 +243,21 @@
     "pendingIncome": "Revenus en attente",
     "pendingIncomeSub": "Travail fait, pas encore payé",
     "potentialPlus": "+ {amount} potentiel",
-    "dueAndPlanned": "À payer et prévu",
-    "dueAndPlannedSub": "Factures en attente de paiement",
-    "plannedPlus": "+ {amount} prévu",
     "inVsOut": "Entrées vs sorties",
     "inVsOutSub": "Montants réglés sur les six derniers mois.",
-    "whereItWent": "Où est passé l'argent",
-    "whereItWentSub": "{label} par catégorie · {period}",
-    "analyticsLink": "Analyses",
     "recent": "Opérations récentes",
     "recentSub": "Les derniers ajouts dans tout le ledger.",
     "emptyTitle": "Votre ledger est vide",
     "emptySub": "Commencez par ajouter ce qu'il y a dans votre portefeuille, puis notez les dépenses au fil de l'eau.",
     "addWallet": "Ajouter le solde du portefeuille",
-    "comingUp": "À venir",
-    "comingUpSub": "Éléments en attente dans les deux prochaines semaines.",
-    "allClear": "Rien à signaler",
-    "allClearSub": "Rien à payer ni à recevoir dans les 14 prochains jours."
+    "comingUp": "Revenus attendus",
+    "comingUpSub": "L’argent que vous attendez encore.",
+    "allClear": "Rien d’attendu pour l’instant",
+    "allClearSub": "Le travail livré apparaît ici jusqu’à son paiement.",
+    "freeToSpend": "Disponible à dépenser",
+    "inSavings": "En épargne",
+    "heroShortfall": "Il vous manque {amount} pour vos factures.",
+    "netSub": "Reçu moins dépensé"
   },
   "debits": {
     "eyebrow": "Argent entrant",
@@ -213,9 +279,8 @@
     "plannedPurchases": "Achats prévus",
     "plannedSub": "{count, plural, =1 {1 sur la liste · tous mois} other {# sur la liste · tous mois}}",
     "plannedScope": "prévus + ce mois-ci",
-    "oneOffTitle": "Ponctuels · {period}",
-    "oneOffEmpty": "Aucun paiement fixe ponctuel",
-    "oneOffEmptySub": "Les factures qui ont leur place ici sans se répéter, comme une assurance annuelle. Les mensuelles vont dans les règles ci-dessus."
+    "inSavings": "En épargne · {period}",
+    "inSavingsSub": "{count, plural, =0 {rien en épargne pour l’instant} =1 {1 facture} other {# factures}}"
   },
   "board": {
     "noEntries": "Aucune opération dans {section}",
@@ -224,7 +289,12 @@
   "entry": {
     "newTitle": "Nouvelle opération",
     "editTitle": "Modifier l'opération",
-    "steps": { "type": "Type", "section": "Section", "details": "Détails", "review": "Vérification" },
+    "steps": {
+      "type": "Type",
+      "section": "Section",
+      "details": "Détails",
+      "review": "Vérification"
+    },
     "stepHints": {
       "type": "L'argent entre ou sort ?",
       "section": "À quelle partie de votre {kind} cela correspond-il ?",
@@ -272,48 +342,15 @@
     "movedBackPending": "Remis en attente",
     "markedUnpaid": "Marqué comme non payé",
     "movedToPotential": "Déplacé vers le travail potentiel",
-    "listEmpty": "Rien ici pour l'instant"
-  },
-  "rules": {
-    "title": "Règles mensuelles",
-    "subtitle": "Chaque règle crée une échéance à payer tous les mois. Marquez-la payée quand l'argent part.",
-    "add": "Ajouter une règle",
-    "progress": "Payé <b>{paid}</b> sur <b>{total}</b> ce mois-ci",
-    "empty": "Pas encore de règle. Ajoutez le loyer, les abonnements ou toute facture qui revient chaque mois.",
-    "every": "chaque {day}",
-    "paid": "Payé",
-    "due": "À payer",
-    "paused": "En pause",
-    "markPaid": "Marquer comme payé",
-    "markUnpaid": "Marquer comme non payé",
-    "editRule": "Modifier la règle",
-    "pause": "Mettre en pause",
-    "resume": "Reprendre",
-    "deleteRule": "Supprimer la règle",
-    "deleteTitle": "Supprimer cette règle ?",
-    "deleteBody": "L'historique payé reste. Les échéances non payées sont retirées et aucune nouvelle ne sera créée.",
-    "markedPaid": "Marqué comme payé",
-    "markedDue": "Marqué à payer",
-    "pausedToast": "Règle en pause",
-    "resumedToast": "Règle reprise",
-    "deletedToast": "Règle supprimée",
-    "dialogEdit": "Modifier la règle",
-    "dialogNew": "Nouvelle règle mensuelle",
-    "dialogSub": "Se répète chaque mois le jour que vous choisissez.",
-    "titleField": "Titre",
-    "titlePlaceholder": "ex. Loyer, Netflix, Salle de sport",
-    "amountField": "Montant ({symbol})",
-    "dayField": "Jour du mois",
-    "dayHint": "Ramené au dernier jour pour les mois courts",
-    "categoryField": "Catégorie",
-    "chooseCategory": "Choisissez une catégorie",
-    "noteField": "Note",
-    "optional": "Facultatif",
-    "saveRule": "Enregistrer la règle",
-    "createRule": "Créer la règle",
-    "updatedToast": "Règle mise à jour",
-    "createdToast": "Règle ajoutée · échéance créée pour ce mois-ci",
-    "somethingWrong": "Une erreur est survenue"
+    "listEmpty": "Rien ici pour l'instant",
+    "dueDay": "Jour d’échéance",
+    "comesBack": "Revient chaque mois le {day, plural, =1 {1er} other {#}}",
+    "dateLocked": "Activez « Modifier aussi les mois à venir » pour changer le jour.",
+    "applyToRule": "Modifier aussi les mois à venir",
+    "applyToRuleOn": "Cela change {month} et les mois suivants.",
+    "applyToRuleOff": "Cela change {month} uniquement.",
+    "useResult": "Utiliser {result}",
+    "scheduledFor": "Programmé pour le {date}"
   },
   "calendar": {
     "eyebrow": "Calendrier",
@@ -321,7 +358,8 @@
     "selectedDay": "Jour sélectionné",
     "nothing": "Rien ce jour-là",
     "nothingSub": "Ajoutez un débit ou un crédit à cette date.",
-    "duePrefix": "à payer {amount}"
+    "scheduled": "Programmé",
+    "scheduledNote": "Prévision d’après vos factures mensuelles. Rien n’est ajouté avant l’arrivée du mois."
   },
   "categories": {
     "eyebrow": "Catalogue",
@@ -378,7 +416,8 @@
       "entries": "Opérations",
       "entriesSub": "Les plus récentes d'abord.",
       "emptyList": "Aucune opération dans cette catégorie",
-      "addOne": "En ajouter une"
+      "addOne": "En ajouter une",
+      "openSubCredit": "{pending} à payer · {saved} en épargne · {planned} prévues"
     }
   },
   "analytics": {
@@ -411,7 +450,8 @@
     "bySectionSub": "Tout ce qui est daté {period}, quel que soit le statut.",
     "settledSuffix": "· {amount} réglé",
     "largest": "Plus grosses opérations de {kind}",
-    "noneSettled": "Aucune opération de {kind} réglée {period}."
+    "noneSettled": "Aucune opération de {kind} réglée {period}.",
+    "savedNote": "fait toujours partie de votre solde"
   },
   "charts": {
     "emptyTrend": "Les opérations réglées apparaîtront ici mois par mois.",
@@ -425,18 +465,71 @@
     "title": "À votre image",
     "description": "Profil, sécurité, devise, vocabulaire et apparence.",
     "recoveryBanner": "Vous vous êtes connecté avec un code de secours. Ce code est maintenant utilisé. Si vous avez perdu votre application d'authentification, désactivez la double authentification puis reconfigurez-la sur votre nouvel appareil et générez de nouveaux codes de secours.",
-    "profile": { "title": "Profil", "subtitle": "Comment nous vous saluons et comment vous vous connectez.", "signOut": "Se déconnecter", "name": "Nom", "nameHint": "Utilisé dans les salutations.", "email": "E-mail", "emailHint": "Vous vous connectez avec.", "currentPassword": "Mot de passe actuel", "currentPasswordHint": "Nécessaire pour changer l'e-mail. Les autres appareils seront déconnectés.", "save": "Enregistrer le profil", "saved": "Profil enregistré" },
-    "preferences": { "title": "Préférences", "subtitle": "Langue, devise, montants et les deux côtés du ledger.", "language": "Langue", "languageHint": "Change toute l'application.", "currency": "Devise", "locale": "Format des nombres (locale)", "preview": "Aperçu : {sample}", "debitLabel": "Libellé de l'argent entrant", "debitHint": "Laissez vide pour « {default} ». Certains préfèrent « Revenus ».", "creditLabel": "Libellé de l'argent sortant", "creditHint": "Laissez vide pour « {default} ». Certains préfèrent « Dépenses ».", "appearance": "Apparence", "save": "Enregistrer les paramètres", "saved": "Paramètres enregistrés" },
-    "sections": { "title": "Noms des sections", "subtitle": "Renommez les six sections selon votre façon de penser. Laissez vide pour la valeur par défaut.", "save": "Enregistrer les noms", "saved": "Noms des sections enregistrés" },
+    "profile": {
+      "title": "Profil",
+      "subtitle": "Comment nous vous saluons et comment vous vous connectez.",
+      "signOut": "Se déconnecter",
+      "name": "Nom",
+      "nameHint": "Utilisé dans les salutations.",
+      "email": "E-mail",
+      "emailHint": "Vous vous connectez avec.",
+      "currentPassword": "Mot de passe actuel",
+      "currentPasswordHint": "Nécessaire pour changer l'e-mail. Les autres appareils seront déconnectés.",
+      "save": "Enregistrer le profil",
+      "saved": "Profil enregistré"
+    },
+    "preferences": {
+      "title": "Préférences",
+      "subtitle": "Langue, devise, montants et les deux côtés du ledger.",
+      "language": "Langue",
+      "languageHint": "Change toute l'application.",
+      "currency": "Devise",
+      "locale": "Format des nombres (locale)",
+      "preview": "Aperçu : {sample}",
+      "debitLabel": "Libellé de l'argent entrant",
+      "debitHint": "Laissez vide pour « {default} ». Certains préfèrent « Revenus ».",
+      "creditLabel": "Libellé de l'argent sortant",
+      "creditHint": "Laissez vide pour « {default} ». Certains préfèrent « Dépenses ».",
+      "appearance": "Apparence",
+      "save": "Enregistrer les paramètres",
+      "saved": "Paramètres enregistrés"
+    },
+    "sections": {
+      "title": "Noms des sections",
+      "subtitle": "Renommez les six sections selon votre façon de penser. Laissez vide pour la valeur par défaut.",
+      "save": "Enregistrer les noms",
+      "saved": "Noms des sections enregistrés"
+    },
     "how": {
       "title": "Comment ça marche",
-      "p1": "<b>Le solde</b>, c'est tout ce qui est entré réglé moins tout ce qui est sorti réglé, tous mois confondus. Les éléments en attente ou prévus ne le touchent jamais avant d'être réglés.",
+      "p1": "<b>Le solde</b>, c’est tout ce qui est entré réglé moins tout ce qui est sorti réglé, tous mois confondus. Les éléments en attente, prévus ou en épargne ne le touchent jamais avant d’être réglés.",
       "p2": "<b>Les débits</b> suivent un circuit : potentiel → en attente → portefeuille. Marquer un débit comme reçu lui donne la date du jour pour qu'il tombe dans le bon mois.",
-      "p3": "<b>Les règles mensuelles</b> créent une échéance chaque mois. Mettre une règle en pause retire l'échéance non payée ; l'historique payé reste toujours."
+      "p3": "<b>Les factures mensuelles fixes</b> reviennent toutes seules chaque mois. Chacune reste à payer jusqu’à ce que vous choisissiez Épargne ou Payé. Une facture laissée telle quelle reste à payer et apparaît en retard, sauf si vous avez demandé qu’elle soit marquée payée toute seule. Mettre une facture en pause retire ce qui n’a pas encore commencé ; l’historique payé reste toujours.",
+      "p4": "<b>L’épargne</b> signifie que l’argent est là, mais que la facture n’est pas encore payée. Il reste dans votre solde et la facture est marquée payée automatiquement un mois après sa date, puis celle du mois suivant revient à payer. <b>Disponible à dépenser</b> exclut déjà vos factures : ce montant ne bouge donc pas quand vous appuyez sur Épargne ou Payé."
     },
-    "password": { "title": "Mot de passe", "subtitle": "Le changer déconnecte tous les autres appareils.", "current": "Mot de passe actuel", "new": "Nouveau mot de passe", "newHint": "Au moins 8 caractères avec des lettres et des chiffres.", "confirm": "Confirmer le nouveau mot de passe", "update": "Mettre à jour le mot de passe", "changed": "Mot de passe modifié" },
-    "devices": { "title": "Appareils", "subtitle": "Connecté quelque part que vous ne reconnaissez pas ? Déconnectez-vous partout ailleurs. Cet appareil reste connecté.", "revoke": "Déconnecter les autres appareils", "revoked": "Tous les autres appareils ont été déconnectés" },
-    "activity": { "title": "Activité récente", "subtitle": "Connexions et changements de sécurité sur votre compte.", "empty": "Rien pour l'instant.", "unknownDevice": "Appareil inconnu", "on": "{browser} sur {os}" }
+    "password": {
+      "title": "Mot de passe",
+      "subtitle": "Le changer déconnecte tous les autres appareils.",
+      "current": "Mot de passe actuel",
+      "new": "Nouveau mot de passe",
+      "newHint": "Au moins 8 caractères avec des lettres et des chiffres.",
+      "confirm": "Confirmer le nouveau mot de passe",
+      "update": "Mettre à jour le mot de passe",
+      "changed": "Mot de passe modifié"
+    },
+    "devices": {
+      "title": "Appareils",
+      "subtitle": "Connecté quelque part que vous ne reconnaissez pas ? Déconnectez-vous partout ailleurs. Cet appareil reste connecté.",
+      "revoke": "Déconnecter les autres appareils",
+      "revoked": "Tous les autres appareils ont été déconnectés"
+    },
+    "activity": {
+      "title": "Activité récente",
+      "subtitle": "Connexions et changements de sécurité sur votre compte.",
+      "empty": "Rien pour l'instant.",
+      "unknownDevice": "Appareil inconnu",
+      "on": "{browser} sur {os}"
+    }
   },
   "activity": {
     "register": "Compte créé",
@@ -496,5 +589,298 @@
     "title": "Rien sur cette page",
     "body": "Le lien est peut-être ancien, ou l'élément a été supprimé.",
     "back": "Retour à l'aperçu"
+  },
+  "calculator": {
+    "title": "Calculatrice",
+    "handle": {
+      "label": "Calcul",
+      "open": "Ouvrir la calculatrice",
+      "close": "Fermer la calculatrice",
+      "title": "Calculatrice (C)"
+    },
+    "minimize": "Réduire la calculatrice",
+    "expand": "Afficher la calculatrice",
+    "tape": "Votre calcul",
+    "emptyTape": "Choisissez un montant sur la page, ou ci-dessous.",
+    "stripHint": "Touchez un montant pour l’ajouter",
+    "removeChip": "Retirer {label}",
+    "result": "Résultat",
+    "error": {
+      "divideByZero": "Impossible de diviser par zéro",
+      "tooLarge": "Ce nombre est trop grand"
+    },
+    "insight": {
+      "percentOfBalance": "{pct}% de votre solde",
+      "leaves": "Il vous reste {amount} à dépenser",
+      "over": "Dépasse votre argent disponible de {amount}",
+      "none": "Vous n’avez pas d’argent disponible pour le moment"
+    },
+    "keys": {
+      "add": "Additionner",
+      "subtract": "Soustraire",
+      "multiply": "Multiplier",
+      "divide": "Diviser",
+      "percent": "Pourcentage",
+      "equals": "Égal",
+      "backspace": "Effacer la dernière étape",
+      "clear": "Tout effacer",
+      "digits": "Touches numériques 123",
+      "decimal": "Séparateur décimal"
+    },
+    "newEntry": "Ajouter : {kind}",
+    "copy": "Copier",
+    "copied": "Copié",
+    "copyFailed": "Votre navigateur a bloqué la copie.",
+    "search": "Rechercher dans votre ledger",
+    "groups": {
+      "overview": "Aperçu",
+      "categories": "Catégories ce mois-ci",
+      "recent": "Récent"
+    },
+    "overview": {
+      "balance": "Solde",
+      "freeToSpend": "Disponible à dépenser",
+      "billsSaved": "En épargne",
+      "receivedMonth": "Reçu ce mois-ci",
+      "spentMonth": "Dépensé ce mois-ci",
+      "netMonth": "Net ce mois-ci"
+    },
+    "pickFromHere": "Choisissez ici tant qu’un formulaire est ouvert",
+    "noMatches": "Aucun résultat pour « {query} »",
+    "loadFailed": "Vos montants n’ont pas pu être chargés.",
+    "signedOut": "Vous êtes déconnecté, vos montants ne peuvent donc pas être chargés.",
+    "signIn": "Se reconnecter"
+  },
+  "fixed": {
+    "savings": "Épargne",
+    "paid": "Payé",
+    "paidAuto": "Payé automatiquement",
+    "late": "En retard",
+    "skipped": "Ignoré",
+    "paused": "En pause",
+    "scheduled": "Programmé",
+    "every": "chaque mois le {day, plural, =1 {1er} other {#}}",
+    "dueToday": "à payer aujourd’hui",
+    "inDays": "{count, plural, =1 {demain} other {dans # jours}}",
+    "wasDue": "à payer depuis le {date}",
+    "lateSince": "En retard depuis le {date}",
+    "paidIfNothing": "Marqué comme payé le {date} si vous ne faites rien",
+    "paysOn": "Payé automatiquement le {date}",
+    "nextOn": "Prochaine le {date}",
+    "scheduledOn": "Attendue le {date}",
+    "notFunded": "Pas entièrement en épargne",
+    "closes": "Facture {month, select, octobre {d’octobre} avril {d’avril} août {d’août} other {de {month}}}, se termine le {date}",
+    "arrives": "Facture {month, select, octobre {d’octobre} avril {d’avril} août {d’août} other {de {month}}} attendue le {date}",
+    "billOfMonth": "Facture {month, select, octobre {d’octobre} avril {d’avril} août {d’août} other {de {month}}}",
+    "autoPaidLine": "Facture {month, select, octobre {d’octobre} avril {d’avril} août {d’août} other {de {month}}} payée automatiquement le {date},",
+    "undo": "Annuler",
+    "bringBack": "Rétablir",
+    "broughtBack": "Facture {month, select, octobre {d’octobre} avril {d’avril} août {d’août} other {de {month}}} rétablie",
+    "resume": "Reprendre",
+    "resumed": "Repris à partir de ce mois-ci",
+    "markUnpaid": "Marquer comme non payé",
+    "markedUnpaid": "Marqué comme non payé",
+    "markedPaid": "Marqué comme payé",
+    "backToDue": "Remettre à payer",
+    "movedBackToDue": "Remis à payer",
+    "movedToSavings": "Mis en épargne",
+    "shortBy": "Il manque {amount}",
+    "makeMonthly": "Rendre mensuel",
+    "madeMonthly": "Revient maintenant chaque mois",
+    "progress": "<b>{paid}</b> payés sur <b>{total}</b>",
+    "lateTitle": "En retard",
+    "lateHint": "Ces mois se sont terminés sans paiement. Ils restent ici jusqu’à ce que vous les payiez ou les ignoriez.",
+    "notRepeating": "Non récurrentes",
+    "notRepeatingHint": "Factures ponctuelles datées de ce mois. Elles ne reviennent que si vous les rendez mensuelles.",
+    "moveAll": {
+      "button": "Tout mettre en épargne",
+      "body": "{count, plural, =1 {1 facture} other {# factures}} ({amount}) {count, plural, =1 {passera} other {passeront}} en épargne. L’argent reste dans votre solde jusqu’au paiement de chacune.",
+      "short": "Il manque {amount} : certaines factures ne seront pas entièrement en épargne tant que plus d’argent n’arrive pas.",
+      "done": "{count, plural, =0 {Rien à déplacer} =1 {1 facture mise en épargne} other {# factures mises en épargne}}"
+    },
+    "skip": {
+      "label": "Ignorer {month}",
+      "title": "Ignorer {month} ?",
+      "body": "<b>{title}</b> ne sera pas à payer pour {month}. Vous pourrez rétablir ce mois à tout moment.",
+      "done": "Mois ignoré : {month}"
+    },
+    "pause": {
+      "action": "Mettre en pause",
+      "title": "Mettre {title} en pause ?",
+      "removes": "{count, plural, =1 {1 facture ouverte} other {# factures ouvertes}} ({amount}) {count, plural, =1 {sera supprimée} other {seront supprimées}}.",
+      "keeps": "{count, plural, =1 {1 facture reste à payer jusqu’à ce que vous la payiez ou l’ignoriez, car son mois est terminé.} other {# factures restent à payer jusqu’à ce que vous les payiez ou les ignoriez, car leurs mois sont terminés.}}",
+      "history": "Les mois payés restent dans votre historique. Rien ne revient tant que vous ne reprenez pas.",
+      "done": "En pause"
+    },
+    "delete": {
+      "action": "Supprimer la règle",
+      "title": "Supprimer {title} ?",
+      "body": "{count, plural, =1 {1 facture impayée} other {# factures impayées}} ({amount}) {count, plural, =1 {sera supprimée} other {seront supprimées}} et plus rien ne reviendra. L’historique payé reste.",
+      "bodyNone": "Plus rien ne reviendra. L’historique payé reste.",
+      "done": "Facture mensuelle supprimée",
+      "bodyAdopted": "Plus rien ne reviendra. Les factures que vous avez saisies restent ponctuelles et l’historique payé reste."
+    },
+    "autoPay": {
+      "label": "Marquer comme payé tout seul si je ne fais rien (prélèvements, abonnements)",
+      "hint": "Les factures en retard restent à payer."
+    },
+    "edit": {
+      "title": "Modifier la facture mensuelle",
+      "subtitle": "Les changements valent pour la facture ouverte et les mois à venir.",
+      "titleField": "Titre",
+      "titlePlaceholder": "p. ex. Loyer, Netflix, Salle de sport",
+      "amount": "Montant ({symbol})",
+      "day": "Jour du mois",
+      "dayHint": "Les mois plus courts utilisent leur dernier jour.",
+      "category": "Catégorie",
+      "chooseCategory": "Choisir une catégorie",
+      "note": "Note",
+      "optional": "Facultatif",
+      "save": "Enregistrer",
+      "saved": "Facture mensuelle mise à jour",
+      "onlyMonth": "Modifier seulement {month}"
+    },
+    "adoption": {
+      "title": "Ces factures reviennent désormais chaque mois",
+      "body": "Vos factures fixes d’avant reviennent maintenant toutes seules. Rien n’a été payé et votre solde n’a pas changé. Gardez celles qui sont justes.",
+      "keep": "Garder",
+      "notMonthly": "Pas mensuelle",
+      "kept": "Gardée comme facture mensuelle",
+      "removed": "Elle n’est plus mensuelle. Votre historique reste."
+    },
+    "empty": {
+      "title": "Aucune facture fixe pour l’instant",
+      "body": "Ajoutez le loyer, les abonnements ou tout ce qui se répète. Cela revient tout seul chaque mois, et vous choisissez à chaque fois Épargne ou Payé.",
+      "action": "Ajouter une facture fixe",
+      "monthTitle": "Rien en {month}",
+      "monthBody": "Aucune facture fixe pour ce mois."
+    },
+    "savingsLink": {
+      "title": "Épargne",
+      "sub": "En épargne"
+    },
+    "preview": {
+      "moved": "Cette date est passée : la première facture arrive le {date}",
+      "paidNow": "Marqué comme payé maintenant",
+      "savedNow": "Reste dans votre solde, en épargne pour cette facture",
+      "dueOn": "À payer le {date}",
+      "scheduled": "Programmé pour le {date} : apparaît comme à payer au début de ce mois",
+      "staysDue": "Reste à payer jusqu’à ce que vous choisissiez Épargne ou Payé",
+      "soon": "{count, plural, =0 {Sera marqué comme payé aujourd’hui} =1 {Sera marqué comme payé demain} other {Sera marqué comme payé dans # jours}}",
+      "startNextMonth": "Commencer le mois prochain"
+    },
+    "autoPayBanner": {
+      "summary": "{count, plural, =1 {1 facture fixe a été payée automatiquement, {amount} ont quitté votre solde} other {# factures fixes ont été payées automatiquement, {amount} ont quitté votre solde}}",
+      "review": "Vérifier",
+      "gotIt": "J’ai compris",
+      "reviewTitle": "Payé automatiquement",
+      "reviewSub": "Annuler remet la facture à payer et rend l’argent à votre solde.",
+      "paidOn": "Payé le {date}",
+      "fromSavings": "Depuis l’épargne",
+      "undo": "Annuler",
+      "undone": "Remis à payer"
+    }
+  },
+  "dueCard": {
+    "title": "À payer et prévu",
+    "subtitle": "Tout ce qu’il reste à payer, les retards d’abord.",
+    "asOfToday": "À ce jour",
+    "stillToPay": "Reste à payer",
+    "inSavings": "En épargne",
+    "planned": "Prévu",
+    "bills": "{count, plural, =0 {Aucune facture} =1 {1 facture} other {# factures}}",
+    "lateBills": "{count, plural, =1 {1 en retard} other {# en retard}}",
+    "plannedItems": "{count, plural, =0 {Rien de prévu} =1 {1 élément} other {# éléments}}",
+    "paidOf": "{paid, plural, =0 {Aucune payée sur {count}} =1 {1 payée sur {count}} other {# payées sur {count}}}",
+    "covered": "Vous avez assez pour tout régler",
+    "shortBy": "Il manque {amount}",
+    "inDays": "{days, plural, =1 {Demain} other {Dans # jours}}",
+    "dueToday": "À payer aujourd’hui",
+    "wasDue": "Échéance du {date}",
+    "lateSince": "En retard depuis le {date}",
+    "paysOn": "Paiement automatique le {date}",
+    "paysIn": "{days, plural, =0 {Paiement automatique aujourd’hui} =1 {Paiement automatique demain} other {Paiement automatique dans # jours}}",
+    "savings": "Épargne",
+    "movedToSavings": "Mis en épargne",
+    "openBucket": "Ouvrir {bucket}",
+    "more": "+{count} de plus",
+    "less": "Voir moins",
+    "scheduled": "Programmé",
+    "scheduledIn": "Programmé pour {month}",
+    "allClear": "Tout est réglé",
+    "allClearSub": "Plus rien à payer pour le moment.",
+    "addBill": "Ajouter une facture mensuelle"
+  },
+  "savings": {
+    "description": "L’argent que vous avez déjà pour vos factures mensuelles. Il reste dans votre solde jusqu’au paiement de chaque facture.",
+    "shortfall": "Il vous manque {amount} : vos factures ouvertes dépassent votre solde.",
+    "summary": "{count, plural, =1 {1 facture, {total}} other {# factures, {total}}}",
+    "hero": {
+      "inSavings": "En épargne",
+      "freeToSpend": "Disponible à dépenser",
+      "freeToSpendNote": "Ce qui reste après l’épargne et les factures à payer.",
+      "ring": "{amount} sur {total} en épargne",
+      "ringClear": "Aucune facture en attente",
+      "nextAutoPay": "{count, plural, =1 {Paiement automatique de {amount} le {date}} other {Paiement automatique de # factures, {amount}, le {date}}}",
+      "incomeShare": "Les factures fixes prennent {pct}% des revenus de ce mois",
+      "monthlyTotal": "Les factures fixes s’élèvent à {amount} par mois"
+    },
+    "inSavings": {
+      "title": "En épargne",
+      "since": "En épargne depuis le {date}",
+      "paysOn": "Paiement automatique le {date}",
+      "left": "{count, plural, =0 {Paiement aujourd’hui} =1 {Paiement demain} other {# jours restants}}",
+      "notFunded": "Pas entièrement en épargne",
+      "backToDue": "Remettre à payer"
+    },
+    "notIn": {
+      "title": "Pas encore en épargne",
+      "save": "Épargne",
+      "dueIn": "{count, plural, =1 {demain} other {dans # jours}}",
+      "dueToday": "à payer aujourd’hui",
+      "wasDue": "échéance du {date}",
+      "autoNote": "Marqué comme payé le {date} si vous ne faites rien",
+      "moveAll": "Tout mettre en épargne",
+      "confirmTitle": "Tout mettre en épargne ?",
+      "confirmBody": "{count, plural, =1 {1 facture, {total}, va en épargne.} other {# factures, {total} au total, vont en épargne.}} L’argent reste dans votre solde.",
+      "confirmShort": "C’est {amount} de plus que votre solde : certaines factures apparaîtront comme pas entièrement en épargne."
+    },
+    "history": {
+      "title": "Historique",
+      "description": "Les factures passées par l’épargne ou payées toutes seules.",
+      "paid": "Payé",
+      "auto": "Payé automatiquement",
+      "fromSavings": "Payé depuis l’épargne"
+    },
+    "flow": {
+      "title": "Comment fonctionne l’épargne",
+      "description": "De l’argent que vous avez déjà, gardé pour une facture jusqu’à son paiement.",
+      "add": "Ajouter une facture fixe",
+      "loop": "Chaque mois",
+      "due": {
+        "title": "À payer",
+        "body": "Votre facture mensuelle arrive toute seule."
+      },
+      "saved": {
+        "title": "En épargne",
+        "body": "L’argent est prêt ? Appuyez sur Épargne. Il reste dans votre solde."
+      },
+      "auto": {
+        "title": "Payé automatiquement",
+        "body": "Un mois après sa date, elle se paie toute seule."
+      },
+      "back": {
+        "title": "De retour le mois prochain",
+        "body": "La facture suivante arrive À payer et le cycle recommence."
+      }
+    },
+    "toast": {
+      "saved": "{title} : en épargne",
+      "settled": "{title} : payé",
+      "pending": "{title} : de nouveau à payer",
+      "short": "Il manque {amount}",
+      "shortSaved": "{title} est en épargne, mais votre épargne dépasse maintenant votre solde.",
+      "movedAll": "{count, plural, =0 {Aucune facture à déplacer} =1 {1 facture mise en épargne} other {# factures mises en épargne}}"
+    }
   }
 }

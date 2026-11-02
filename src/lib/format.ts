@@ -12,23 +12,29 @@ export function formatMoney(
   amount: number,
   currency = "USD",
   locale = "en-US",
-  opts: { compact?: boolean; signed?: boolean; maximumFractionDigits?: number } = {},
+  opts: { compact?: boolean; signed?: boolean; maximumFractionDigits?: number; minimumFractionDigits?: number } = {},
 ) {
-  const { compact = false, signed = false, maximumFractionDigits } = opts;
+  const { compact = false, signed = false, maximumFractionDigits, minimumFractionDigits = 0 } = opts;
   const abs = Math.abs(amount);
   const nf = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     notation: compact && abs >= 10000 ? "compact" : "standard",
-    maximumFractionDigits: maximumFractionDigits ?? (compact && abs >= 10000 ? 1 : abs >= 1000 ? 0 : 2),
-    minimumFractionDigits: 0,
+    // Intl throws a RangeError when the minimum is above the maximum.
+    maximumFractionDigits: Math.max(
+      maximumFractionDigits ?? (compact && abs >= 10000 ? 1 : abs >= 1000 ? 0 : 2),
+      minimumFractionDigits,
+    ),
+    minimumFractionDigits,
   });
   const body = nf.format(abs);
+  // Right-to-left number formats open with a direction mark, and the sign belongs after it.
+  const withSign = (sign: string) => (body.startsWith("\u200F") ? `\u200F${sign}${body.slice(1)}` : `${sign}${body}`);
   if (signed) {
-    if (amount > 0) return `+${body}`;
-    if (amount < 0) return `−${body}`;
+    if (amount > 0) return withSign("+");
+    if (amount < 0) return withSign("−");
   } else if (amount < 0) {
-    return `−${body}`;
+    return withSign("−");
   }
   return body;
 }

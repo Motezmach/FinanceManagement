@@ -23,7 +23,7 @@ who needs an account has one.
 
 1. Push this folder to a Git repository and import it in Vercel.
 2. Add the environment variables from `.env.example`: `DATABASE_URL` and `AUTH_SECRET` are required; `PASSWORD_PEPPER`, `DATA_ENCRYPTION_KEY` and `DISABLE_REGISTRATION` are optional but recommended (see the Security section).
-3. Run `npm run db:push` once from your machine against the same `DATABASE_URL` (or let a previous local run do it).
+3. Run `npm run db:push` once from your machine against the same `DATABASE_URL` (or let a previous local run do it). A database that already has users is upgraded differently; see [Upgrading and rolling back](#upgrading-and-rolling-back).
 4. Deploy. Everything is server-rendered on demand; no extra config needed.
 
 Generate a fresh `AUTH_SECRET` with:
@@ -65,15 +65,70 @@ Known limits: there is no "forgot password" flow because the app sends no email.
 | Current wallet | debit | settled | Money you already received |
 | Pending work | debit | pending | Work delivered, payment awaited |
 | Potential work | debit | planned | Opportunities that may become income |
-| Fixed monthly | credit | pending (due) | Recurring bills, driven by monthly rules |
+| Fixed monthly | credit | pending (due) | Recurring bills, placed automatically every month |
 | Optional | credit | planned | Discretionary purchases you can skip |
 | Daily | credit | settled | Everyday spending, the default for a credit |
 
 - **Balance** = all settled debits − all settled credits, across every month.
-- Pending and planned entries never touch the balance until you mark them settled.
+- **Free to spend** = balance − In savings − Due. It drops when a bill is placed and rises with income or a removed bill. It does not move on Savings, on Paid or on an automatic payment. Planned entries are not subtracted, because they might not happen.
+- Pending, planned and In savings entries never touch the balance until they are settled.
 - Debits move along a pipeline: potential → pending → wallet. Settling stamps today's date.
-- **Monthly rules** (Credits → Fixed monthly) create one due entry per month, idempotently. Pay it, pause the rule, or delete it; paid history stays.
 - Every entry has a category. Categories have their own analytics page.
+
+## Fixed monthly
+
+A monthly bill is a rule plus at most one record per calendar month. A record is dated on the rule's day, clamped to the length of the month, so the 31st becomes February 28. Its cycle lasts one month from that date and ends on its renewal date.
+
+| On the renewal date, a record that is | Becomes |
+| --- | --- |
+| In savings | Paid automatically |
+| Due, with "Mark as paid by itself" on (off by default) | Paid automatically |
+| Due, with that switch off | Still Due, shown as Late. It is never counted as paid unless you say so |
+| Due, because you took it back after its cycle ended | Still Due, shown as Late, until you pay it |
+
+An automatic payment keeps the record's date, so each month holds exactly one instance of the bill in analytics; `settled_at` says when it left the balance. Next month's record then comes back as Due.
+
+- **Placement.** A record is placed on its date, or early from the 1st of its month when no earlier open record of that bill remains, so a paid bill reappears ahead of its date and can be saved or paid early.
+- **Future months.** Browsing never creates records. They show as read-only Scheduled and stay out of the totals.
+- **Time away.** A month missed with the switch off is recorded as skipped, not invented as debt, and Bring back restores it. With the switch on it is recorded as paid automatically.
+- **Pausing and deleting.** Pausing removes records whose cycle is still running and leaves late ones Due. Deleting removes open records. Paid history always stays.
+
+The rules live in a pure engine, `src/lib/fixed/cycle.ts`, which never reads the clock. `ensureSynced` applies its plan during render at most once a day per user (`users.fixed_synced_on`), and any change to a bill resets that gate. The first sync of an existing account also moves its recent fixed entries onto rules with the switch off, and the Fixed tab lists them once with Keep and Not monthly. Nothing settles during that move, so no balance changes.
+
+### Savings
+
+Savings means the money is there but the bill is not paid yet. A Due bill can go in savings while its cycle is running; a Late one can only be paid or skipped. It is not a separate account, so the balance stays the same until the bill is paid. `/credits/savings` shows what is in savings with a countdown to each automatic payment, what is not in savings yet, and the history. Money is allocated by renewal date, and a bill the balance cannot reach shows as "Not fully in savings".
+
+## Smart calculator
+
+A small arrow on the bottom-right edge of every page (mirrored in Arabic) opens the calculator; `C` does the same. The panel does not block the page, so you can keep working behind it.
+
+- **Values come from the app.** Click any amount on the page, or pick one from the Ledger chips (overview figures, fixed bills, categories, recent entries, served by `GET /api/calculator` with no notes and no category ids). Digits sit behind the "123" toggle, for constants.
+- **Percentages.** `a + 10%` is `a + a × 10%`, and `a × 10%` is `a × 0.10`. Addition and subtraction run in integer cents. The engine is pure and tested, in `src/lib/calculator/engine.ts`, and never uses `eval`.
+- **Using the result.** An insight line relates it to your balance and free money. New credit and New debit open the entry wizard with the amount filled in, and Copy copies it.
+- **Privacy.** The tape lives in React memory only. Nothing is written to `localStorage` and there is no history.
+
+## Known limits
+
+Dates follow the server clock, which is UTC on Vercel. A bill turns Late or pays automatically at midnight UTC, not at your local midnight.
+
+## Upgrading and rolling back
+
+To upgrade a database that already has users, apply the hand-written script instead of `db:push`, before deploying the new code:
+
+```bash
+psql "$DATABASE_URL" -f scripts/sql/2026-11-fixed-monthly.sql
+```
+
+It is additive and idempotent, and the previous version of the app keeps working against it. `auto_pay` defaults to false, so existing bills never start paying by themselves.
+
+To roll back, move money in savings back to Due before redeploying older code, because it does not know that status:
+
+```sql
+UPDATE entries SET status = 'pending' WHERE status = 'saved';
+```
+
+Rows the app settled by itself have `auto_paid = true`, if you need to review them. The added columns and the `rule_skips` table can stay; older code ignores them.
 
 ## Customize
 
@@ -95,19 +150,23 @@ Known limits: there is no "forgot password" flow because the app sends no email.
 | `npm run db:push` | Sync the Drizzle schema to the database |
 | `npm run db:studio` | Browse the database with Drizzle Studio |
 | `npm run lint` | ESLint |
+| `npm test` | Unit tests for the fixed monthly engine, the calculator and the message catalogs |
 
 ## Project layout
 
 ```
 src/
-  app/            routes: (auth)/login, (auth)/register, (app)/dashboard, debits, credits,
-                  calendar, categories, categories/[id], analytics, settings
+  app/            routes: (auth)/login, (auth)/register, (app)/dashboard, debits, credits, credits/savings,
+                  calendar, categories, categories/[id], analytics, settings, api/calculator
   components/     ui primitives, layout shell, entry wizard, charts, calendar, categories, dashboard
   lib/
-    actions/      server actions (auth: register/login/profile/password, entries, categories, rules, settings)
-    queries/      read models (dashboard, analytics, calendar, categories, entries, rules), all scoped by user id
+    actions/      server actions (auth: register/login/profile/password, entries, categories, rules, savings, settings)
+    queries/      read models (dashboard, analytics, calendar, categories, entries, rules, savings, calculator), all scoped by user id
+    fixed/        the monthly cycle: pure engine, board model, sync and multi-statement writes
+    calculator/   pure calculator engine
     auth/         session cookie (jose), password hashing (bcryptjs), onboarding (default categories)
     config/       buckets, palette, icons, default categories, settings
     db/           drizzle schema + client
   proxy.ts        route guard (anonymous → /login, signed in → away from auth pages)
+scripts/sql/      hand-written, idempotent database upgrades
 ```

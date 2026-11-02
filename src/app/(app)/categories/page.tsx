@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/current-user";
+import { ensureSynced } from "@/lib/fixed/sync";
 import { categoryStats } from "@/lib/queries/categories";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
 import { CategoriesView } from "@/components/categories/categories-view";
@@ -21,6 +22,8 @@ export default async function CategoriesPage({
   const sp = await searchParams;
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
   const t = await getTranslations("categories");
+
+  await ensureSynced(user);
   const stats = await categoryStats(user.id, period);
 
   return (

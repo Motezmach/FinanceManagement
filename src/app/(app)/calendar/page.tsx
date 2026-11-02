@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/current-user";
+import { ensureSynced } from "@/lib/fixed/sync";
 import { getCalendar } from "@/lib/queries/calendar";
-import { ensureMaterialized } from "@/lib/queries/rules";
 import { currentPeriod, isValidPeriod, todayISO } from "@/lib/dates";
+import { sumMoney } from "@/lib/utils";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { PageHeader } from "@/components/layout/page-header";
 import { MonthPicker } from "@/components/layout/month-picker";
@@ -23,9 +24,9 @@ export default async function CalendarPage({
   const sp = await searchParams;
   const day = sp.day && /^\d{4}-\d{2}-\d{2}$/.test(sp.day) ? sp.day : undefined;
   const period = isValidPeriod(sp.period) ? sp.period : day ? day.slice(0, 7) : currentPeriod();
-  const [t, tc] = await Promise.all([getTranslations("calendar"), getTranslations("common")]);
+  const [t, tc, ts] = await Promise.all([getTranslations("calendar"), getTranslations("common"), getTranslations("status")]);
 
-  await ensureMaterialized(user.id, period);
+  await ensureSynced(user);
   const data = await getCalendar(user.id, period);
 
   return (
@@ -36,19 +37,29 @@ export default async function CalendarPage({
         description={
           <span className="flex flex-wrap gap-x-4 gap-y-1">
             <span>
-              {tc("in")} <Money amount={data.totals.in} kind="debit" className="font-medium" />
+              {tc("in")} <Money amount={data.totals.in} kind="debit" label={tc("in")} className="font-medium" />
             </span>
             <span>
-              {tc("out")} <Money amount={data.totals.out} kind="credit" className="font-medium" />
+              {tc("out")} <Money amount={data.totals.out} kind="credit" label={tc("out")} className="font-medium" />
             </span>
             <span>
-              {tc("due")} <Money amount={data.totals.due} muted={!data.totals.due} className="font-medium" />
+              {tc("due")} <Money amount={data.totals.due} muted={!data.totals.due} label={tc("due")} className="font-medium" />
             </span>
+            {data.totals.saved > 0 ? (
+              <span>
+                {ts("saved.label")} <Money amount={data.totals.saved} label={ts("saved.label")} className="font-medium text-saved-ink" />
+              </span>
+            ) : null}
+            {data.scheduled.length ? (
+              <span>
+                {t("scheduled")} <Money amount={sumMoney(data.scheduled.map((b) => b.amount))} muted label={t("scheduled")} className="font-medium" />
+              </span>
+            ) : null}
           </span>
         }
         actions={<MonthPicker period={period} />}
       />
-      <MonthGrid period={period} days={data.days} entries={data.entries} today={todayISO()} initialDay={day} />
+      <MonthGrid key={period} period={period} days={data.days} entries={data.entries} scheduled={data.scheduled} today={todayISO()} initialDay={day} />
     </>
   );
 }

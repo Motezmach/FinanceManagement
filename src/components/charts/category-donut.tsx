@@ -6,6 +6,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useFormat } from "@/components/providers/settings-provider";
 import { swatch } from "@/lib/config/palette";
 import { CategoryIcon } from "@/components/ui/category-chip";
+import { Money } from "@/components/ui/money";
 import { TooltipShell } from "./chart-tooltip";
 import { cn } from "@/lib/utils";
 
@@ -80,7 +81,9 @@ export function CategoryDonut({
               <CategoryIcon icon={s.icon} color={s.color} size="xs" />
               <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{name}</span>
               <span className="w-10 text-end text-[12px] tabular text-ink-3">{s.pct}%</span>
-              <span className="w-20 text-end text-[13px] tabular font-medium text-ink">{money(s.total)}</span>
+              <span className="w-20 text-end">
+                <Money amount={s.total} label={name} className="text-[13px] font-medium" />
+              </span>
             </>
           );
           const cls = "flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition hover:bg-surface-2";

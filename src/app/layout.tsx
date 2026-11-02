@@ -61,7 +61,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeProvider initial={theme}>
             {children}
             <Toaster
-              position={dirFor(locale) === "rtl" ? "bottom-left" : "bottom-right"}
+              position="top-center"
+              mobileOffset={{ top: 64 }}
               dir={dirFor(locale)}
               toastOptions={{
                 className: "!rounded-xl !border-line !bg-surface !text-ink !shadow-pop !text-[13px] !font-sans",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { firstName, requireUser } from "@/lib/auth/current-user";
 import { getDashboard } from "@/lib/queries/dashboard";
-import { ensureMaterialized } from "@/lib/queries/rules";
+import { ensureSynced } from "@/lib/fixed/sync";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { PageHeader } from "@/components/layout/page-header";
@@ -23,7 +23,7 @@ export default async function DashboardPage({
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
   const t = await getTranslations("dashboard");
 
-  await ensureMaterialized(user.id, period);
+  await ensureSynced(user);
   const data = await getDashboard(user.id, period);
 
   return (

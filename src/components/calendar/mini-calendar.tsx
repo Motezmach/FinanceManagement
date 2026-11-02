@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { getDay, getDaysInMonth } from "date-fns";
 import type { DayTotals } from "@/lib/queries/dashboard";
-import { currentPeriod, periodToDate } from "@/lib/dates";
+import { periodOf, periodToDate } from "@/lib/dates";
 import { weekdayNames } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useFormat } from "@/components/providers/settings-provider";
@@ -15,7 +15,7 @@ export function MiniCalendar({ period, days, today }: { period: string; days: Da
   const lead = (getDay(base) + 6) % 7;
   const cells: (string | null)[] = Array(lead).fill(null);
   for (let d = 1; d <= total; d++) cells.push(`${period}-${String(d).padStart(2, "0")}`);
-  const qs = period === currentPeriod() ? "" : `period=${period}&`;
+  const qs = period === periodOf(today) ? "" : `period=${period}&`;
   const weekdays = weekdayNames(locale, "narrow");
 
   return (
@@ -46,6 +46,7 @@ export function MiniCalendar({ period, days, today }: { period: string; days: Da
                 {d?.in ? <span className="h-1 w-1 rounded-full bg-inflow" /> : null}
                 {d?.out ? <span className="h-1 w-1 rounded-full bg-outflow" /> : null}
                 {d?.due ? <span className="h-1 w-1 rounded-full bg-warn" /> : null}
+                {d?.saved ? <span className="h-1 w-1 rounded-full bg-saved" /> : null}
               </span>
             </Link>
           );

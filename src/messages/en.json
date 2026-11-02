@@ -1,8 +1,6 @@
 {
   "common": {
-    "appName": "Ledger",
     "cancel": "Cancel",
-    "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
@@ -24,13 +22,8 @@
     "manage": "Manage",
     "moreActions": "More actions",
     "tryAgain": "Try again",
-    "language": "Language",
-    "settled": "settled",
-    "pending": "pending",
-    "planned": "planned",
     "open": "open",
-    "recurring": "Recurring",
-    "month": "month"
+    "recurring": "Recurring"
   },
   "nav": {
     "overview": "Overview",
@@ -40,24 +33,82 @@
     "settings": "Settings",
     "newEntry": "New entry",
     "logOut": "Log out",
-    "theme": { "light": "Light", "system": "System", "dark": "Dark" }
+    "theme": {
+      "light": "Light",
+      "system": "System",
+      "dark": "Dark"
+    },
+    "savings": "Savings"
   },
   "kinds": {
-    "debit": { "label": "Debit", "sub": "Money in", "description": "Payments received, work in the pipeline, your wallet." },
-    "credit": { "label": "Credit", "sub": "Money out", "description": "Bills, everyday spending and things you plan to buy." }
+    "debit": {
+      "label": "Debit",
+      "sub": "Money in",
+      "description": "Payments received, work in the pipeline, your wallet."
+    },
+    "credit": {
+      "label": "Credit",
+      "sub": "Money out",
+      "description": "Bills, everyday spending and things you plan to buy."
+    }
   },
   "buckets": {
-    "wallet": { "label": "Current wallet", "description": "Money you already have in hand.", "hint": "Received payments, cash on hand, balance you can spend today." },
-    "pending": { "label": "Pending work", "description": "Work delivered, payment on its way.", "hint": "Invoices sent, jobs done but not yet paid." },
-    "potential": { "label": "Potential work", "description": "Opportunities that may turn into income.", "hint": "Leads, quotes, projects under discussion." },
-    "fixed": { "label": "Fixed monthly", "description": "Recurring obligations due every month.", "hint": "Rent, subscriptions, loan payments, insurance." },
-    "optional": { "label": "Optional", "description": "Discretionary spending you can plan or skip.", "hint": "Wishlist items, upgrades, treats, one-off purchases." },
-    "daily": { "label": "Daily", "description": "Everyday spending as it happens.", "hint": "Groceries, coffee, transport, lunch. The default when you add a credit." }
+    "wallet": {
+      "label": "Current wallet",
+      "description": "Money you already have in hand.",
+      "hint": "Received payments, cash on hand, balance you can spend today."
+    },
+    "pending": {
+      "label": "Pending work",
+      "description": "Work delivered, payment on its way.",
+      "hint": "Invoices sent, jobs done but not yet paid."
+    },
+    "potential": {
+      "label": "Potential work",
+      "description": "Opportunities that may turn into income.",
+      "hint": "Leads, quotes, projects under discussion."
+    },
+    "fixed": {
+      "label": "Fixed monthly",
+      "description": "Recurring obligations due every month.",
+      "hint": "Rent, subscriptions, loan payments, insurance."
+    },
+    "optional": {
+      "label": "Optional",
+      "description": "Discretionary spending you can plan or skip.",
+      "hint": "Wishlist items, upgrades, treats, one-off purchases."
+    },
+    "daily": {
+      "label": "Daily",
+      "description": "Everyday spending as it happens.",
+      "hint": "Groceries, coffee, transport, lunch. The default when you add a credit."
+    }
   },
   "status": {
-    "settled": { "label": "Settled", "debit": "Received", "credit": "Paid", "note": "This counts towards your balance right away." },
-    "pending": { "label": "Pending", "debit": "Awaiting payment", "credit": "Due", "note": "Shown as pending until you mark it as settled." },
-    "planned": { "label": "Planned", "debit": "Potential", "credit": "Planned", "note": "Planned items never touch your balance until you settle them." }
+    "settled": {
+      "label": "Settled",
+      "debit": "Received",
+      "credit": "Paid",
+      "note": "This counts towards your balance right away."
+    },
+    "pending": {
+      "label": "Pending",
+      "debit": "Awaiting payment",
+      "credit": "Due",
+      "note": "Shown as pending until you mark it as settled."
+    },
+    "planned": {
+      "label": "Planned",
+      "debit": "Potential",
+      "credit": "Planned",
+      "note": "Planned items never touch your balance until you settle them."
+    },
+    "saved": {
+      "label": "In savings",
+      "debit": "In savings",
+      "credit": "In savings",
+      "note": "Still in your balance, kept for this bill. It is marked paid on its renewal date."
+    }
   },
   "auth": {
     "login": {
@@ -124,7 +175,11 @@
     "weakRepeat": "Repeating one character is easy to guess.",
     "weakPattern": "Keyboard patterns are easy to guess.",
     "weakEmail": "Do not use part of your email in your password.",
-    "weakName": "Do not use your name in your password."
+    "weakName": "Do not use your name in your password.",
+    "savedOtherMonth": "Another month of this bill is already in savings. Mark it as paid or move it back to due first.",
+    "savedNeedsBill": "Only monthly bills can go in savings.",
+    "savedCycleOver": "This bill’s month is over, so it can’t go in savings. Mark it as paid instead.",
+    "plannedNotForBills": "A monthly bill can be Due, In savings or Paid, but not Planned."
   },
   "server": {
     "registrationClosed": "Registration is closed on this instance.",
@@ -147,22 +202,35 @@
     "fixedNeedsCredit": "Fixed payments need a credit category",
     "unknownLocale": "Unknown locale",
     "unknownTheme": "Unknown theme",
-    "unknownLanguage": "Unknown language",
     "twoFactorAlreadyOn": "Two-factor authentication is already on.",
     "twoFactorNotOn": "Two-factor authentication is not on.",
     "startSetupAgain": "Start the setup again.",
-    "signOutFailed": "Could not sign out other devices"
+    "signOutFailed": "Could not sign out other devices",
+    "billChanged": "This bill just changed. Take another look and try again.",
+    "ruleExists": "You already have this monthly bill on the same day.",
+    "ruleNotFound": "This monthly bill no longer exists.",
+    "rulePaused": "Resume this bill first.",
+    "ruleLocked": "A monthly bill stays a fixed bill. Delete its rule to change the type.",
+    "alreadyMonthly": "This entry already repeats every month.",
+    "tooManyRules": "You can have up to 200 active monthly bills. Pause or delete one first.",
+    "dateTooFar": "Pick a date within the next 24 months.",
+    "dateOutsideMonth": "Keep this date inside the bill’s own month.",
+    "dateNeedsApply": "Changing the day also changes the months ahead. Turn on the option to update them."
   },
   "dashboard": {
     "eyebrow": "Overview",
     "hello": "Hello, {name}",
-    "greeting": { "night": "Still up", "morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening" },
+    "greeting": {
+      "night": "Still up",
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
     "greetingLine": "{greeting}, {name}",
     "welcome": "Welcome aboard, {name}. Your ledger is ready with a starter set of categories. Press <kbd>N</kbd> anytime to add an entry, and start with what is in your wallet.",
     "balance": "Balance",
-    "afterPending": "After pending & due:",
-    "netThisMonth": "Net this month:",
-    "netMonth": "Net {month}:",
+    "netThisMonth": "Net this month",
+    "netMonth": "Net {month}",
     "addDebit": "Add {label}",
     "addCredit": "Add {label}",
     "today": "Today",
@@ -175,23 +243,21 @@
     "pendingIncome": "Pending income",
     "pendingIncomeSub": "Work done, not paid yet",
     "potentialPlus": "+ {amount} potential",
-    "dueAndPlanned": "Due & planned",
-    "dueAndPlannedSub": "Bills waiting to be paid",
-    "plannedPlus": "+ {amount} planned",
     "inVsOut": "In vs out",
     "inVsOutSub": "Settled amounts over the last six months.",
-    "whereItWent": "Where it went",
-    "whereItWentSub": "{label} by category · {period}",
-    "analyticsLink": "Analytics",
     "recent": "Recent entries",
     "recentSub": "Latest additions across the ledger.",
     "emptyTitle": "Your ledger is empty",
     "emptySub": "Start by adding what is in your wallet, then log spending as it happens.",
     "addWallet": "Add wallet balance",
-    "comingUp": "Coming up",
-    "comingUpSub": "Pending items in the next two weeks.",
-    "allClear": "All clear",
-    "allClearSub": "Nothing due or expected in the next 14 days."
+    "comingUp": "Expected income",
+    "comingUpSub": "Money you are still waiting to receive.",
+    "allClear": "Nothing expected yet",
+    "allClearSub": "Work you have delivered shows up here until it is paid.",
+    "freeToSpend": "Free to spend",
+    "inSavings": "In savings",
+    "heroShortfall": "You are short by {amount} for your bills.",
+    "netSub": "Received minus spent"
   },
   "debits": {
     "eyebrow": "Money in",
@@ -213,9 +279,8 @@
     "plannedPurchases": "Planned purchases",
     "plannedSub": "{count, plural, =1 {1 on the list · any month} other {# on the list · any month}}",
     "plannedScope": "planned + this month",
-    "oneOffTitle": "One-off · {period}",
-    "oneOffEmpty": "No one-off fixed payments",
-    "oneOffEmptySub": "Bills that belong here but do not repeat, like a yearly insurance premium. Monthly ones go in the rules above."
+    "inSavings": "In savings · {period}",
+    "inSavingsSub": "{count, plural, =0 {nothing in savings yet} =1 {1 bill} other {# bills}}"
   },
   "board": {
     "noEntries": "No {section} entries",
@@ -224,7 +289,12 @@
   "entry": {
     "newTitle": "New entry",
     "editTitle": "Edit entry",
-    "steps": { "type": "Type", "section": "Section", "details": "Details", "review": "Review" },
+    "steps": {
+      "type": "Type",
+      "section": "Section",
+      "details": "Details",
+      "review": "Review"
+    },
     "stepHints": {
       "type": "Is money coming in or going out?",
       "section": "Which part of your {kind} is this?",
@@ -272,48 +342,15 @@
     "movedBackPending": "Moved back to pending",
     "markedUnpaid": "Marked as unpaid",
     "movedToPotential": "Moved to potential work",
-    "listEmpty": "Nothing here yet"
-  },
-  "rules": {
-    "title": "Monthly rules",
-    "subtitle": "Each rule creates a due entry every month. Mark it paid when the money leaves.",
-    "add": "Add rule",
-    "progress": "Paid <b>{paid}</b> of <b>{total}</b> this month",
-    "empty": "No rules yet. Add rent, subscriptions or any bill that repeats every month.",
-    "every": "every {day}",
-    "paid": "Paid",
-    "due": "Due",
-    "paused": "Paused",
-    "markPaid": "Mark as paid",
-    "markUnpaid": "Mark as unpaid",
-    "editRule": "Edit rule",
-    "pause": "Pause",
-    "resume": "Resume",
-    "deleteRule": "Delete rule",
-    "deleteTitle": "Delete this rule?",
-    "deleteBody": "Paid history stays. Unpaid instances are removed and no new ones will be created.",
-    "markedPaid": "Marked as paid",
-    "markedDue": "Marked as due",
-    "pausedToast": "Rule paused",
-    "resumedToast": "Rule resumed",
-    "deletedToast": "Rule deleted",
-    "dialogEdit": "Edit rule",
-    "dialogNew": "New monthly rule",
-    "dialogSub": "Repeats every month on the day you choose.",
-    "titleField": "Title",
-    "titlePlaceholder": "e.g. Rent, Netflix, Gym",
-    "amountField": "Amount ({symbol})",
-    "dayField": "Day of month",
-    "dayHint": "Clamped on short months",
-    "categoryField": "Category",
-    "chooseCategory": "Choose a category",
-    "noteField": "Note",
-    "optional": "Optional",
-    "saveRule": "Save rule",
-    "createRule": "Create rule",
-    "updatedToast": "Rule updated",
-    "createdToast": "Rule added · due entry created for this month",
-    "somethingWrong": "Something went wrong"
+    "listEmpty": "Nothing here yet",
+    "dueDay": "Due day",
+    "comesBack": "Comes back every month on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    "dateLocked": "Turn on “Also update future months” to change the day.",
+    "applyToRule": "Also update future months",
+    "applyToRuleOn": "This changes {month} and the months after it.",
+    "applyToRuleOff": "This changes {month} only.",
+    "useResult": "Use {result}",
+    "scheduledFor": "Scheduled for {date}"
   },
   "calendar": {
     "eyebrow": "Calendar",
@@ -321,7 +358,8 @@
     "selectedDay": "Selected day",
     "nothing": "Nothing on this day",
     "nothingSub": "Add a debit or credit for this date.",
-    "duePrefix": "due {amount}"
+    "scheduled": "Scheduled",
+    "scheduledNote": "Projected from your monthly bills. Nothing is added until the month arrives."
   },
   "categories": {
     "eyebrow": "Catalog",
@@ -378,7 +416,8 @@
       "entries": "Entries",
       "entriesSub": "Most recent first.",
       "emptyList": "No entries in this category",
-      "addOne": "Add one"
+      "addOne": "Add one",
+      "openSubCredit": "{pending} due · {saved} in savings · {planned} planned"
     }
   },
   "analytics": {
@@ -411,7 +450,8 @@
     "bySectionSub": "Everything dated {period}, any status.",
     "settledSuffix": "· {amount} settled",
     "largest": "Largest {kind} entries",
-    "noneSettled": "No settled {kind} entries {period}."
+    "noneSettled": "No settled {kind} entries {period}.",
+    "savedNote": "still part of your balance"
   },
   "charts": {
     "emptyTrend": "Settled entries will show up here month by month.",
@@ -425,18 +465,71 @@
     "title": "Make it yours",
     "description": "Profile, security, currency, wording and appearance.",
     "recoveryBanner": "You signed in with a recovery code. That code is now used up. If you lost your authenticator, turn two-factor off and set it up again on your new device, then generate fresh recovery codes.",
-    "profile": { "title": "Profile", "subtitle": "How we greet you and how you sign in.", "signOut": "Sign out", "name": "Name", "nameHint": "Used in greetings.", "email": "Email", "emailHint": "You sign in with this.", "currentPassword": "Current password", "currentPasswordHint": "Needed to change the email. Other devices will be signed out.", "save": "Save profile", "saved": "Profile saved" },
-    "preferences": { "title": "Preferences", "subtitle": "Language, currency, amounts and the two sides of the ledger.", "language": "Language", "languageHint": "Changes the whole app.", "currency": "Currency", "locale": "Number format (locale)", "preview": "Preview: {sample}", "debitLabel": "Label for money in", "debitHint": "Leave empty for \"{default}\". Some people prefer \"Income\".", "creditLabel": "Label for money out", "creditHint": "Leave empty for \"{default}\". Some people prefer \"Expenses\".", "appearance": "Appearance", "save": "Save settings", "saved": "Settings saved" },
-    "sections": { "title": "Section names", "subtitle": "Rename the six sections to match how you think. Leave blank for the default.", "save": "Save names", "saved": "Section names saved" },
+    "profile": {
+      "title": "Profile",
+      "subtitle": "How we greet you and how you sign in.",
+      "signOut": "Sign out",
+      "name": "Name",
+      "nameHint": "Used in greetings.",
+      "email": "Email",
+      "emailHint": "You sign in with this.",
+      "currentPassword": "Current password",
+      "currentPasswordHint": "Needed to change the email. Other devices will be signed out.",
+      "save": "Save profile",
+      "saved": "Profile saved"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "subtitle": "Language, currency, amounts and the two sides of the ledger.",
+      "language": "Language",
+      "languageHint": "Changes the whole app.",
+      "currency": "Currency",
+      "locale": "Number format (locale)",
+      "preview": "Preview: {sample}",
+      "debitLabel": "Label for money in",
+      "debitHint": "Leave empty for \"{default}\". Some people prefer \"Income\".",
+      "creditLabel": "Label for money out",
+      "creditHint": "Leave empty for \"{default}\". Some people prefer \"Expenses\".",
+      "appearance": "Appearance",
+      "save": "Save settings",
+      "saved": "Settings saved"
+    },
+    "sections": {
+      "title": "Section names",
+      "subtitle": "Rename the six sections to match how you think. Leave blank for the default.",
+      "save": "Save names",
+      "saved": "Section names saved"
+    },
     "how": {
       "title": "How it works",
-      "p1": "<b>Balance</b> is everything settled in minus everything settled out, across all months. Pending and planned entries never touch it until you mark them settled.",
+      "p1": "<b>Balance</b> is everything settled in minus everything settled out, across all months. Pending, planned and In savings entries never touch it until they are settled.",
       "p2": "<b>Debits</b> move along a pipeline: potential → pending → wallet. Marking one as received stamps today's date so it lands in the right month.",
-      "p3": "<b>Fixed monthly rules</b> create a due entry each month. Pausing a rule removes the unpaid instance; paid history always stays."
+      "p3": "<b>Fixed monthly</b> bills come back on their own every month. Each one stays Due until you choose Savings or Paid. A bill you leave alone stays Due and shows as late, unless you asked for it to be marked as paid by itself. Pausing a bill removes what has not started yet; paid history always stays.",
+      "p4": "<b>Savings</b> means the money is there but the bill is not paid yet. It stays in your balance and the bill is marked paid automatically one month after its date, then next month’s bill comes back as Due. <b>Free to spend</b> already leaves out your bills, so it does not move when you press Savings or Paid."
     },
-    "password": { "title": "Password", "subtitle": "Changing it signs out every other device.", "current": "Current password", "new": "New password", "newHint": "At least 8 characters with letters and numbers.", "confirm": "Confirm new password", "update": "Update password", "changed": "Password changed" },
-    "devices": { "title": "Devices", "subtitle": "Signed in somewhere you do not recognise? Sign out everywhere else. This device stays signed in.", "revoke": "Sign out of other devices", "revoked": "Every other device has been signed out" },
-    "activity": { "title": "Recent activity", "subtitle": "Sign-ins and security changes on your account.", "empty": "Nothing yet.", "unknownDevice": "Unknown device", "on": "{browser} on {os}" }
+    "password": {
+      "title": "Password",
+      "subtitle": "Changing it signs out every other device.",
+      "current": "Current password",
+      "new": "New password",
+      "newHint": "At least 8 characters with letters and numbers.",
+      "confirm": "Confirm new password",
+      "update": "Update password",
+      "changed": "Password changed"
+    },
+    "devices": {
+      "title": "Devices",
+      "subtitle": "Signed in somewhere you do not recognise? Sign out everywhere else. This device stays signed in.",
+      "revoke": "Sign out of other devices",
+      "revoked": "Every other device has been signed out"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "subtitle": "Sign-ins and security changes on your account.",
+      "empty": "Nothing yet.",
+      "unknownDevice": "Unknown device",
+      "on": "{browser} on {os}"
+    }
   },
   "activity": {
     "register": "Account created",
@@ -496,5 +589,298 @@
     "title": "Nothing on this page",
     "body": "The link may be old, or the item was deleted.",
     "back": "Back to overview"
+  },
+  "calculator": {
+    "title": "Calculator",
+    "handle": {
+      "label": "Calc",
+      "open": "Open calculator",
+      "close": "Close calculator",
+      "title": "Calculator (C)"
+    },
+    "minimize": "Minimize calculator",
+    "expand": "Show the calculator",
+    "tape": "Your calculation",
+    "emptyTape": "Pick any amount on the page, or choose one below.",
+    "stripHint": "Tap any amount to add it",
+    "removeChip": "Remove {label}",
+    "result": "Result",
+    "error": {
+      "divideByZero": "You can’t divide by zero",
+      "tooLarge": "That number is too large"
+    },
+    "insight": {
+      "percentOfBalance": "{pct}% of your balance",
+      "leaves": "Leaves {amount} free to spend",
+      "over": "More than your free money by {amount}",
+      "none": "You have no free money right now"
+    },
+    "keys": {
+      "add": "Add",
+      "subtract": "Subtract",
+      "multiply": "Multiply",
+      "divide": "Divide",
+      "percent": "Percent",
+      "equals": "Equals",
+      "backspace": "Delete the last step",
+      "clear": "Clear everything",
+      "digits": "Number keys 123",
+      "decimal": "Decimal point"
+    },
+    "newEntry": "New {kind}",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Your browser blocked the copy.",
+    "search": "Search your ledger",
+    "groups": {
+      "overview": "Overview",
+      "categories": "Categories this month",
+      "recent": "Recent"
+    },
+    "overview": {
+      "balance": "Balance",
+      "freeToSpend": "Free to spend",
+      "billsSaved": "In savings",
+      "receivedMonth": "Received this month",
+      "spentMonth": "Spent this month",
+      "netMonth": "Net this month"
+    },
+    "pickFromHere": "Pick from here while a form is open",
+    "noMatches": "Nothing matches “{query}”",
+    "loadFailed": "Your amounts didn’t load.",
+    "signedOut": "You’re signed out, so your amounts can’t load.",
+    "signIn": "Sign in again"
+  },
+  "fixed": {
+    "savings": "Savings",
+    "paid": "Paid",
+    "paidAuto": "Paid automatically",
+    "late": "Late",
+    "skipped": "Skipped",
+    "paused": "Paused",
+    "scheduled": "Scheduled",
+    "every": "every {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    "dueToday": "due today",
+    "inDays": "{count, plural, =1 {tomorrow} other {in # days}}",
+    "wasDue": "was due {date}",
+    "lateSince": "Late since {date}",
+    "paidIfNothing": "Marked paid on {date} if you do nothing",
+    "paysOn": "Pays automatically on {date}",
+    "nextOn": "Next on {date}",
+    "scheduledOn": "Expected on {date}",
+    "notFunded": "Not fully in savings",
+    "closes": "{month} bill, closes {date}",
+    "arrives": "{month} bill arrives {date}",
+    "billOfMonth": "{month} bill",
+    "autoPaidLine": "{month} paid automatically on {date},",
+    "undo": "Undo",
+    "bringBack": "Bring back",
+    "broughtBack": "{month} is back",
+    "resume": "Resume",
+    "resumed": "Resumed from this month",
+    "markUnpaid": "Mark as unpaid",
+    "markedUnpaid": "Marked as unpaid",
+    "markedPaid": "Marked as paid",
+    "backToDue": "Back to due",
+    "movedBackToDue": "Back to due",
+    "movedToSavings": "Moved to savings",
+    "shortBy": "Short by {amount}",
+    "makeMonthly": "Make this monthly",
+    "madeMonthly": "Now repeats every month",
+    "progress": "<b>{paid}</b> of <b>{total}</b> paid",
+    "lateTitle": "Late",
+    "lateHint": "These months ended without a payment. They stay here until you pay or skip them.",
+    "notRepeating": "Not repeating",
+    "notRepeatingHint": "One-off bills dated this month. They only come back if you make them monthly.",
+    "moveAll": {
+      "button": "Move all to savings",
+      "body": "{count, plural, =1 {1 bill} other {# bills}} ({amount}) will move to savings. The money stays in your balance until each one is paid.",
+      "short": "Short by {amount}: some bills won’t be fully in savings until more money comes in.",
+      "done": "{count, plural, =0 {Nothing to move} =1 {1 bill moved to savings} other {# bills moved to savings}}"
+    },
+    "skip": {
+      "label": "Skip {month}",
+      "title": "Skip {month}?",
+      "body": "<b>{title}</b> won’t be due for {month}. You can bring it back from that month at any time.",
+      "done": "Skipped {month}"
+    },
+    "pause": {
+      "action": "Pause",
+      "title": "Pause {title}?",
+      "removes": "{count, plural, =1 {1 open bill} other {# open bills}} ({amount}) will be removed.",
+      "keeps": "{count, plural, =1 {1 bill stays due until you pay or skip it, because its month is over.} other {# bills stay due until you pay or skip them, because their months are over.}}",
+      "history": "Paid months stay in your history. Nothing comes back until you resume it.",
+      "done": "Paused"
+    },
+    "delete": {
+      "action": "Delete rule",
+      "title": "Delete {title}?",
+      "body": "{count, plural, =1 {1 unpaid bill} other {# unpaid bills}} ({amount}) will be removed and it stops coming back. Paid history stays.",
+      "bodyNone": "It stops coming back. Paid history stays.",
+      "done": "Monthly bill deleted",
+      "bodyAdopted": "It stops coming back. Bills you entered yourself stay as one-offs, and paid history stays."
+    },
+    "autoPay": {
+      "label": "Mark as paid by itself if I do nothing (direct debits, subscriptions)",
+      "hint": "Late bills stay due."
+    },
+    "edit": {
+      "title": "Edit monthly bill",
+      "subtitle": "Changes apply to the open bill and the months ahead.",
+      "titleField": "Title",
+      "titlePlaceholder": "e.g. Rent, Netflix, Gym",
+      "amount": "Amount ({symbol})",
+      "day": "Day of the month",
+      "dayHint": "Shorter months use their last day.",
+      "category": "Category",
+      "chooseCategory": "Choose a category",
+      "note": "Note",
+      "optional": "Optional",
+      "save": "Save changes",
+      "saved": "Monthly bill updated",
+      "onlyMonth": "Change only {month}"
+    },
+    "adoption": {
+      "title": "These bills now repeat every month",
+      "body": "Your fixed bills from before now come back on their own. Nothing was paid and your balance did not change. Keep the ones that are right.",
+      "keep": "Keep",
+      "notMonthly": "Not monthly",
+      "kept": "Kept as a monthly bill",
+      "removed": "No longer monthly. Your history stays."
+    },
+    "empty": {
+      "title": "No fixed bills yet",
+      "body": "Add rent, subscriptions or anything that repeats. It comes back on its own every month, and each time you choose Savings or Paid.",
+      "action": "Add a fixed bill",
+      "monthTitle": "Nothing in {month}",
+      "monthBody": "No fixed bills for this month."
+    },
+    "savingsLink": {
+      "title": "Savings",
+      "sub": "In savings"
+    },
+    "preview": {
+      "moved": "That date has passed, so the first bill lands on {date}",
+      "paidNow": "Marked as paid now",
+      "savedNow": "Stays in your balance, in savings for this bill",
+      "dueOn": "Due on {date}",
+      "scheduled": "Scheduled for {date}. It shows up as Due when that month starts",
+      "staysDue": "It stays due until you choose Savings or Paid",
+      "soon": "{count, plural, =0 {This gets marked paid today} =1 {This gets marked paid tomorrow} other {This gets marked paid in # days}}",
+      "startNextMonth": "Start next month"
+    },
+    "autoPayBanner": {
+      "summary": "{count, plural, =1 {1 fixed bill was paid automatically, {amount} left your balance} other {# fixed bills were paid automatically, {amount} left your balance}}",
+      "review": "Review",
+      "gotIt": "Got it",
+      "reviewTitle": "Paid automatically",
+      "reviewSub": "Undo puts a bill back to due and returns the money to your balance.",
+      "paidOn": "Paid on {date}",
+      "fromSavings": "From savings",
+      "undo": "Undo",
+      "undone": "Back to due"
+    }
+  },
+  "dueCard": {
+    "title": "Due & planned",
+    "subtitle": "Everything still to pay, late bills first.",
+    "asOfToday": "As of today",
+    "stillToPay": "Still to pay",
+    "inSavings": "In savings",
+    "planned": "Planned",
+    "bills": "{count, plural, =0 {No bills} =1 {1 bill} other {# bills}}",
+    "lateBills": "{count, plural, =1 {1 late} other {# late}}",
+    "plannedItems": "{count, plural, =0 {Nothing planned} =1 {1 item} other {# items}}",
+    "paidOf": "{paid} of {count} paid",
+    "covered": "You have enough for all of it",
+    "shortBy": "Short by {amount}",
+    "inDays": "{days, plural, =1 {Tomorrow} other {In # days}}",
+    "dueToday": "Due today",
+    "wasDue": "Was due {date}",
+    "lateSince": "Late since {date}",
+    "paysOn": "Pays automatically on {date}",
+    "paysIn": "{days, plural, =0 {Pays automatically today} =1 {Pays automatically tomorrow} other {Pays automatically in # days}}",
+    "savings": "Savings",
+    "movedToSavings": "Moved to savings",
+    "openBucket": "Open {bucket}",
+    "more": "+{count} more",
+    "less": "Show less",
+    "scheduled": "Scheduled",
+    "scheduledIn": "Scheduled for {month}",
+    "allClear": "All clear",
+    "allClearSub": "Nothing left to pay right now.",
+    "addBill": "Add a monthly bill"
+  },
+  "savings": {
+    "description": "Money you already have for your monthly bills. It stays in your balance until each bill is paid.",
+    "shortfall": "You are short by {amount}: your open bills add up to more than your balance.",
+    "summary": "{count, plural, =1 {1 bill, {total}} other {# bills, {total}}}",
+    "hero": {
+      "inSavings": "In savings",
+      "freeToSpend": "Free to spend",
+      "freeToSpendNote": "What is left after savings and due bills.",
+      "ring": "{amount} of {total} in savings",
+      "ringClear": "No bills waiting",
+      "nextAutoPay": "{count, plural, =1 {{amount} pays automatically on {date}} other {# bills, {amount}, pay automatically on {date}}}",
+      "incomeShare": "Fixed bills take {pct}% of this month’s income",
+      "monthlyTotal": "Fixed bills come to {amount} a month"
+    },
+    "inSavings": {
+      "title": "In savings",
+      "since": "In savings since {date}",
+      "paysOn": "Pays automatically on {date}",
+      "left": "{count, plural, =0 {Pays today} =1 {Pays tomorrow} other {# days left}}",
+      "notFunded": "Not fully in savings",
+      "backToDue": "Back to due"
+    },
+    "notIn": {
+      "title": "Not in savings yet",
+      "save": "Savings",
+      "dueIn": "{count, plural, =1 {tomorrow} other {in # days}}",
+      "dueToday": "due today",
+      "wasDue": "was due {date}",
+      "autoNote": "Marked paid on {date} if you do nothing",
+      "moveAll": "Move all to savings",
+      "confirmTitle": "Move all to savings?",
+      "confirmBody": "{count, plural, =1 {1 bill, {total}, goes in savings.} other {# bills, {total} in all, go in savings.}} The money stays in your balance.",
+      "confirmShort": "That is {amount} more than your balance, so some bills will show as not fully in savings."
+    },
+    "history": {
+      "title": "History",
+      "description": "Bills that went through savings or paid by themselves.",
+      "paid": "Paid",
+      "auto": "Paid automatically",
+      "fromSavings": "Paid from savings"
+    },
+    "flow": {
+      "title": "How savings works",
+      "description": "Money you already have, kept for a bill until it is paid.",
+      "add": "Add a fixed bill",
+      "loop": "Every month",
+      "due": {
+        "title": "Due",
+        "body": "Your monthly bill arrives on its own."
+      },
+      "saved": {
+        "title": "In savings",
+        "body": "Have the money? Press Savings. It stays in your balance."
+      },
+      "auto": {
+        "title": "Paid automatically",
+        "body": "One month after its date, it pays itself."
+      },
+      "back": {
+        "title": "Back next month",
+        "body": "The next bill arrives as Due and the loop starts again."
+      }
+    },
+    "toast": {
+      "saved": "{title} is in savings",
+      "settled": "{title} is paid",
+      "pending": "{title} is back to due",
+      "short": "Short by {amount}",
+      "shortSaved": "{title} is in savings, but your savings are now more than your balance.",
+      "movedAll": "{count, plural, =0 {No bills to move} =1 {1 bill moved to savings} other {# bills moved to savings}}"
+    }
   }
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth/current-user";
 import { getAnalytics } from "@/lib/queries/analytics";
-import { ensureMaterialized } from "@/lib/queries/rules";
+import { ensureSynced } from "@/lib/fixed/sync";
 import { currentPeriod, isValidPeriod } from "@/lib/dates";
 import { AnalyticsView } from "@/components/analytics/analytics-view";
 import { PageHeader } from "@/components/layout/page-header";
@@ -23,7 +23,7 @@ export default async function AnalyticsPage({
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
   const t = await getTranslations("analytics");
 
-  await ensureMaterialized(user.id, period);
+  await ensureSynced(user);
   const data = await getAnalytics(user.id, period);
 
   return (

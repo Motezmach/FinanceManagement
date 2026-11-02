@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
@@ -13,6 +13,42 @@ const sizes = {
   lg: "max-w-2xl",
   xl: "max-w-4xl",
 };
+
+// Open dialogs across the page, topmost last. Dialogs can stack, so the scroll lock and
+// Esc belong to the stack rather than to each dialog.
+const stack: string[] = [];
+const listeners = new Set<() => void>();
+let bodyOverflow = "";
+
+function openInStack(id: string) {
+  if (stack.length === 0) {
+    bodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+  stack.push(id);
+  listeners.forEach((listener) => listener());
+}
+
+function closeInStack(id: string) {
+  stack.splice(stack.lastIndexOf(id), 1);
+  if (stack.length === 0) document.body.style.overflow = bodyOverflow;
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function useAnyDialogOpen() {
+  return useSyncExternalStore(
+    subscribe,
+    () => stack.length > 0,
+    () => false,
+  );
+}
 
 export function Dialog({
   open,
@@ -35,28 +71,37 @@ export function Dialog({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("common");
+  const id = useId();
+
+  // Callers pass inline handlers, and re-running the effect below on each of their
+  // renders would steal focus back to the first field while the user types.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
+    openInStack(id);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape" || e.defaultPrevented || stack.at(-1) !== id) return;
+      e.preventDefault();
+      onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    // Focus the first focusable element in the panel.
-    const t = setTimeout(() => {
-      const el = panelRef.current?.querySelector<HTMLElement>(
-        "[data-autofocus], input, select, textarea, button:not([data-close])",
-      );
-      el?.focus();
+    const focusTimer = setTimeout(() => {
+      const panel = panelRef.current;
+      const target =
+        panel?.querySelector<HTMLElement>("[data-autofocus]") ??
+        panel?.querySelector<HTMLElement>("input, select, textarea, button:not([data-close])");
+      target?.focus();
     }, 60);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-      clearTimeout(t);
+      clearTimeout(focusTimer);
+      closeInStack(id);
     };
-  }, [open, onClose]);
+  }, [open, id]);
 
   if (typeof document === "undefined") return null;
 
@@ -65,12 +110,15 @@ export function Dialog({
       {open ? (
         <motion.div
           key="overlay"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-0 backdrop-blur-[2px] sm:items-center sm:p-6 dark:bg-black/60"
+          data-dialog-overlay
+          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-0 backdrop-blur-[2px] sm:items-center sm:p-6 lg:[html[data-calc-open]_&]:pe-[376px] dark:bg-black/60"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onMouseDown={(e) => {
+            // With the calculator open the user is picking amounts around the dialog.
+            if (document.documentElement.hasAttribute("data-calc-open")) return;
             if (e.target === e.currentTarget) onClose();
           }}
         >
@@ -103,7 +151,7 @@ export function Dialog({
                     type="button"
                     onClick={onClose}
                     aria-label={t("close")}
-                    className="-mr-2 -mt-1 rounded-lg p-2 text-ink-3 transition hover:bg-surface-2 hover:text-ink"
+                    className="-me-2 -mt-1 rounded-lg p-2 text-ink-3 transition hover:bg-surface-2 hover:text-ink"
                   >
                     <X className="h-4 w-4" />
                   </button>

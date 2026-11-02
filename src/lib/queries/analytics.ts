@@ -6,7 +6,8 @@ import { entries } from "@/lib/db/schema";
 import type { Bucket, Kind, Status } from "@/lib/config/buckets";
 import { currentPeriod, lastPeriods, periodRange, periodToDate, todayISO } from "@/lib/dates";
 import { formatShortMonth } from "@/lib/format";
-import type { EntryWithCategory } from "./entries";
+import { subtractMoney } from "@/lib/utils";
+import { ENTRY_RELATIONS, type EntryWithCategory } from "./entries";
 
 const periodExpr = sql<string>`to_char(${entries.date}, 'YYYY-MM')`;
 const totalExpr = sql<number>`coalesce(sum(${entries.amount}), 0)::float8`;
@@ -34,7 +35,7 @@ export type Analytics = {
   }[];
   daily: { date: string; day: number; in: number; out: number }[];
   buckets: Record<Bucket, { total: number; count: number; settled: number }>;
-  pipeline: { wallet: number; pending: number; potential: number; due: number; planned: number };
+  pipeline: { wallet: number; pending: number; potential: number; due: number; planned: number; saved: number };
   categories: Record<Kind, CategoryBreak[]>;
   stats: {
     received: number;
@@ -92,7 +93,7 @@ export async function getAnalytics(userId: string, period: string): Promise<Anal
         gte(entries.date, start),
         lte(entries.date, end),
       ),
-      with: { category: true },
+      with: ENTRY_RELATIONS,
       columns: { amount: true, kind: true, categoryId: true },
     }),
     db.query.entries.findMany({
@@ -103,7 +104,7 @@ export async function getAnalytics(userId: string, period: string): Promise<Anal
         gte(entries.date, start),
         lte(entries.date, end),
       ),
-      with: { category: true },
+      with: ENTRY_RELATIONS,
       orderBy: [desc(entries.amount)],
       limit: 5,
     }),
@@ -150,11 +151,12 @@ export async function getAnalytics(userId: string, period: string): Promise<Anal
   const pp = (kind: Kind, status: Status) =>
     Number(pipeRows.find((r) => r.kind === kind && r.status === status)?.total ?? 0);
   const pipeline = {
-    wallet: pp("debit", "settled") - pp("credit", "settled"),
+    wallet: subtractMoney(pp("debit", "settled"), pp("credit", "settled")),
     pending: pp("debit", "pending"),
     potential: pp("debit", "planned"),
     due: pp("credit", "pending"),
     planned: pp("credit", "planned"),
+    saved: pp("credit", "saved"),
   };
 
   const breakdown = (kind: Kind): CategoryBreak[] => {

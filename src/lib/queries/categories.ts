@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { categories, entries, type Category } from "@/lib/db/schema";
 import type { Bucket, Kind, Status } from "@/lib/config/buckets";
 import { lastPeriods, periodRange } from "@/lib/dates";
-import type { EntryWithCategory } from "./entries";
+import { ENTRY_RELATIONS, type EntryWithCategory } from "./entries";
 
 export async function listCategories(
   userId: string,
@@ -24,7 +24,7 @@ export type CategoryStat = {
   category: Category;
   periodTotal: number; // settled in the selected month
   periodCount: number;
-  openTotal: number; // pending + planned, any month
+  openTotal: number; // pending + saved + planned, any month
   allTimeTotal: number; // settled, any month
   allTimeCount: number;
   trend: { period: string; total: number }[]; // last 6 months, settled
@@ -101,7 +101,7 @@ export async function categoryStats(userId: string, period: string): Promise<Cat
 
 export type CategoryDetail = {
   category: Category;
-  monthly: { period: string; settled: number; pending: number; planned: number; count: number }[];
+  monthly: { period: string; settled: number; pending: number; planned: number; saved: number; count: number }[];
   byStatus: Record<Status, { total: number; count: number }>;
   byBucket: Partial<Record<Bucket, { total: number; count: number }>>;
   periodTotal: number;
@@ -145,7 +145,7 @@ export async function getCategoryDetail(
       .groupBy(entries.bucket),
     db.query.entries.findMany({
       where: base,
-      with: { category: true },
+      with: ENTRY_RELATIONS,
       orderBy: [desc(entries.date), desc(entries.createdAt)],
       limit: 100,
     }),
@@ -159,11 +159,17 @@ export async function getCategoryDetail(
       settled: pick("settled"),
       pending: pick("pending"),
       planned: pick("planned"),
+      saved: pick("saved"),
       count: rows.reduce((acc, r) => acc + Number(r.n), 0),
     };
   });
 
-  const byStatus = { settled: { total: 0, count: 0 }, pending: { total: 0, count: 0 }, planned: { total: 0, count: 0 } };
+  const byStatus: CategoryDetail["byStatus"] = {
+    settled: { total: 0, count: 0 },
+    pending: { total: 0, count: 0 },
+    planned: { total: 0, count: 0 },
+    saved: { total: 0, count: 0 },
+  };
   for (const r of statusRows) byStatus[r.status] = { total: Number(r.total), count: Number(r.n) };
 
   const byBucket: CategoryDetail["byBucket"] = {};

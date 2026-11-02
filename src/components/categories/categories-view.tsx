@@ -105,7 +105,7 @@ function CategoryCard({ stat, share, onEdit }: { stat: CategoryStat; share: numb
               <p className="text-[12px] text-ink-3">
                 {tc("entryCount", { count: stat.allTimeCount })}
                 {stat.openTotal > 0 ? ` ${t("openPrefix")} ` : ""}
-                {stat.openTotal > 0 ? <Money amount={stat.openTotal} muted className="text-[12px]" /> : null}
+                {stat.openTotal > 0 ? <Money amount={stat.openTotal} muted label={`${c.name} · ${tc("open")}`} className="text-[12px]" /> : null}
               </p>
             </div>
           </div>
@@ -114,7 +114,7 @@ function CategoryCard({ stat, share, onEdit }: { stat: CategoryStat; share: numb
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-[11.5px] uppercase tracking-wider text-ink-3">{t("thisMonth")}</p>
-            <Money amount={stat.periodTotal} className="font-display text-[22px] leading-none" />
+            <Money amount={stat.periodTotal} label={c.name} className="font-display text-[22px] leading-none" />
             {share > 0 ? <p className="mt-1 text-[12px] text-ink-3">{t("share", { percent: Math.round(share * 100) })}</p> : null}
           </div>
           <Sparkline data={stat.trend.map((x) => x.total)} color={sw.chart} height={40} className="w-[110px]" />

@@ -8,6 +8,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import type { CategoryDetail as Detail } from "@/lib/queries/categories";
 import type { Bucket, Status } from "@/lib/config/buckets";
 import { swatch } from "@/lib/config/palette";
+import { sumMoney } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CategoryIcon } from "@/components/ui/category-chip";
@@ -29,8 +30,11 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
   const { openAdd } = useEntryModal();
   const [edit, setEdit] = useState(false);
   const sw = swatch(c.color);
-  const total = detail.byStatus.settled.total;
-  const entryCount = detail.byStatus.settled.count + detail.byStatus.pending.count + detail.byStatus.planned.count;
+  const { byStatus } = detail;
+  const isCredit = c.kind === "credit";
+  const statuses: Status[] = isCredit ? ["settled", "pending", "saved", "planned"] : ["settled", "pending", "planned"];
+  const entryCount = statuses.reduce((sum, s) => sum + byStatus[s].count, 0);
+  const openTotal = sumMoney([byStatus.pending.total, byStatus.saved.total, byStatus.planned.total]);
   const bucketRows = (Object.entries(detail.byBucket) as [Bucket, { total: number; count: number }][]).sort((a, b) => b[1].total - a[1].total);
   const bucketMax = Math.max(1, ...bucketRows.map(([, v]) => v.total));
 
@@ -62,10 +66,19 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
       </div>
 
       <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label={month(period)} amount={detail.periodTotal} kind={c.kind} />
-        <Stat label={t("avgMonthly")} amount={detail.avgMonthly} sub={t("avgSub")} />
-        <Stat label={t("allTime")} amount={total} sub={t("allTimeSub", { count: detail.byStatus.settled.count })} />
-        <Stat label={t("open")} amount={detail.byStatus.pending.total + detail.byStatus.planned.total} sub={t("openSub", { pending: detail.byStatus.pending.count, planned: detail.byStatus.planned.count })} />
+        <Stat name={c.name} label={month(period)} amount={detail.periodTotal} kind={c.kind} />
+        <Stat name={c.name} label={t("avgMonthly")} amount={detail.avgMonthly} sub={t("avgSub")} />
+        <Stat name={c.name} label={t("allTime")} amount={byStatus.settled.total} sub={t("allTimeSub", { count: byStatus.settled.count })} />
+        <Stat
+          name={c.name}
+          label={t("open")}
+          amount={openTotal}
+          sub={
+            isCredit
+              ? t("openSubCredit", { pending: byStatus.pending.count, saved: byStatus.saved.count, planned: byStatus.planned.count })
+              : t("openSub", { pending: byStatus.pending.count, planned: byStatus.planned.count })
+          }
+        />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
@@ -89,6 +102,7 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
                           rows={[
                             { label: ts("settled.label"), value: money(d.settled), color: sw.chart },
                             { label: ts("pending.label"), value: money(d.pending) },
+                            ...(isCredit ? [{ label: ts("saved.label"), value: money(d.saved) }] : []),
                             { label: ts("planned.label"), value: money(d.planned) },
                           ]}
                         />
@@ -111,8 +125,8 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
                   <div key={bucket}>
                     <div className="mb-1 flex items-center justify-between text-[13px]">
                       <span className="text-ink">{bucketLabel(bucket)}</span>
-                      <span className="tabular text-ink-2">
-                        {money(v.total)} <span className="text-ink-3">· {v.count}</span>
+                      <span>
+                        <Money amount={v.total} label={`${c.name} · ${bucketLabel(bucket)}`} className="text-ink-2" /> <span className="tabular text-ink-3">· {v.count}</span>
                       </span>
                     </div>
                     <ProgressBar value={(v.total / bucketMax) * 100} color={sw.chart} height={5} />
@@ -127,12 +141,12 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
 
           <Card>
             <CardHeader title={t("byStatus")} />
-            <CardBody className="grid grid-cols-3 gap-2 pt-4">
-              {(["settled", "pending", "planned"] as Status[]).map((s) => (
-                <div key={s} className="rounded-xl bg-surface-2 p-3">
+            <CardBody className="grid grid-cols-2 gap-2 pt-4">
+              {statuses.map((s) => (
+                <div key={s} className="rounded-xl bg-surface-2 p-3 odd:last:col-span-2">
                   <p className="text-[11.5px] text-ink-3">{statusLabel(s, c.kind)}</p>
-                  <Money amount={detail.byStatus[s].total} className="mt-0.5 block text-[15px] font-semibold" />
-                  <p className="text-[11.5px] text-ink-3">{tc("entryCount", { count: detail.byStatus[s].count })}</p>
+                  <Money amount={byStatus[s].total} label={`${c.name} · ${statusLabel(s, c.kind)}`} className="mt-0.5 block text-[15px] font-semibold" />
+                  <p className="text-[11.5px] text-ink-3">{tc("entryCount", { count: byStatus[s].count })}</p>
                 </div>
               ))}
             </CardBody>
@@ -143,7 +157,7 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
               <p className="text-[12px] font-medium uppercase tracking-wider text-ink-3">{t("largest")}</p>
               <div className="mt-1.5 flex items-center justify-between gap-3">
                 <p className="truncate text-[14px] font-medium text-ink">{detail.largest.title}</p>
-                <Money amount={detail.largest.amount} kind={c.kind} className="text-[15px] font-semibold" />
+                <Money amount={detail.largest.amount} kind={c.kind} label={detail.largest.title} className="text-[15px] font-semibold" />
               </div>
             </Card>
           ) : null}
@@ -171,11 +185,11 @@ export function CategoryDetailView({ detail, period }: { detail: Detail; period:
   );
 }
 
-function Stat({ label, amount, sub, kind }: { label: string; amount: number; sub?: string; kind?: "debit" | "credit" }) {
+function Stat({ name, label, amount, sub, kind }: { name: string; label: string; amount: number; sub?: string; kind?: "debit" | "credit" }) {
   return (
     <Card className="px-5 py-4">
       <p className="text-[12.5px] font-medium text-ink-3">{label}</p>
-      <Money amount={amount} kind={kind} className="font-display mt-1 block text-[24px] leading-none" />
+      <Money amount={amount} kind={kind} label={`${name} · ${label}`} className="font-display mt-1 block text-[24px] leading-none" />
       {sub ? <p className="mt-1.5 text-[12px] text-ink-3">{sub}</p> : null}
     </Card>
   );

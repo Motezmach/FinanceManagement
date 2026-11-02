@@ -81,7 +81,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <Card>
             <CardHeader title={t("how.title")} />
             <CardBody className="space-y-3 pt-4 text-[13.5px] leading-relaxed text-ink-2">
-              {(["p1", "p2", "p3"] as const).map((k) => (
+              {(["p1", "p2", "p3", "p4"] as const).map((k) => (
                 <p key={k}>{t.rich(`how.${k}`, { b: (c) => <span className="font-medium text-ink">{c}</span> })}</p>
               ))}
             </CardBody>

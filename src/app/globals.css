@@ -29,6 +29,9 @@
   --danger: #c4616c;
   --danger-soft: #f3e1e3;
   --danger-ink: #8e3b45;
+  --saved: #5b8fa8;
+  --saved-soft: #deeaf0;
+  --saved-ink: #2f5a6e;
   --ring: rgba(217, 119, 87, 0.35);
   --shadow-card: 0 1px 2px rgba(31, 30, 29, 0.04), 0 10px 30px -18px rgba(31, 30, 29, 0.18);
   --shadow-pop: 0 2px 6px rgba(31, 30, 29, 0.06), 0 24px 60px -24px rgba(31, 30, 29, 0.35);
@@ -62,6 +65,9 @@
   --danger: #d27680;
   --danger-soft: #3c262a;
   --danger-ink: #eaa5ac;
+  --saved: #7fb0c8;
+  --saved-soft: #1f2e36;
+  --saved-ink: #a9cfe0;
   --ring: rgba(224, 138, 108, 0.4);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -18px rgba(0, 0, 0, 0.6);
   --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 60px -24px rgba(0, 0, 0, 0.8);
@@ -95,6 +101,9 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-ink: var(--danger-ink);
+  --color-saved: var(--saved);
+  --color-saved-soft: var(--saved-soft);
+  --color-saved-ink: var(--saved-ink);
   --color-ring: var(--ring);
 
   --font-sans: var(--font-plex), var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
@@ -233,4 +242,141 @@
 .recharts-surface:focus,
 .recharts-wrapper:focus {
   outline: none;
+}
+
+/* Smart calculator */
+
+/* Money is always dir="ltr"; a block-level amount must still line up with its parent's text. */
+@layer base {
+  [data-calc-amount] {
+    text-align: match-parent;
+  }
+}
+
+/* The edge handle: one nudge when it first appears, one light sweep on hover or focus. */
+.calc-handle-sweep {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 15%,
+    color-mix(in srgb, var(--accent) 38%, transparent) 50%,
+    transparent 85%
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .calc-handle-hint {
+    animation: calc-handle-hint 900ms cubic-bezier(0.22, 1, 0.36, 1) 1200ms 1;
+  }
+  html[dir="rtl"] .calc-handle-hint {
+    animation-name: calc-handle-hint-rtl;
+  }
+  .calc-handle[aria-expanded="false"]:focus-visible .calc-handle-sweep {
+    animation: calc-handle-sweep 650ms ease-out 1;
+  }
+  html[dir="rtl"] .calc-handle[aria-expanded="false"]:focus-visible .calc-handle-sweep {
+    animation-name: calc-handle-sweep-rtl;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .calc-handle[aria-expanded="false"]:hover .calc-handle-sweep {
+    animation: calc-handle-sweep 650ms ease-out 1;
+  }
+  html[dir="rtl"] .calc-handle[aria-expanded="false"]:hover .calc-handle-sweep {
+    animation-name: calc-handle-sweep-rtl;
+  }
+}
+
+@keyframes calc-handle-hint {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(-7px);
+  }
+  75% {
+    transform: translateX(1px);
+  }
+}
+
+@keyframes calc-handle-hint-rtl {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(7px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes calc-handle-sweep {
+  from {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes calc-handle-sweep-rtl {
+  from {
+    opacity: 1;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+/* Pick mode: amounts on the page, or only those in the top dialog while a form is open. */
+html[data-calc-pick] [data-calc-amount],
+html[data-calc-open] [data-dialog-overlay]:not(:has(~ [data-dialog-overlay])) [data-calc-amount] {
+  cursor: copy;
+  border-radius: 3px;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: background-color 120ms ease-out;
+}
+
+html[data-calc-pick] [data-calc-amount]:hover,
+html[data-calc-open] [data-dialog-overlay]:not(:has(~ [data-dialog-overlay])) [data-calc-amount]:hover {
+  background-color: var(--accent-soft);
+}
+
+/* iOS only sends clicks to a plain span when it has a pointer cursor. */
+@media (hover: none) {
+  html[data-calc-pick] [data-calc-amount],
+  html[data-calc-open] [data-dialog-overlay]:not(:has(~ [data-dialog-overlay])) [data-calc-amount] {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+[data-calc-flash] {
+  animation: calc-picked 500ms ease-out 1;
+}
+
+@keyframes calc-picked {
+  from {
+    background-color: var(--accent-soft);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
 }

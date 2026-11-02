@@ -85,7 +85,7 @@ export function Menu({
                     item.onSelect();
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition disabled:opacity-50",
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-[13px] transition disabled:opacity-50",
                     item.tone === "danger"
                       ? "text-danger-ink hover:bg-danger-soft"
                       : "text-ink hover:bg-surface-2",

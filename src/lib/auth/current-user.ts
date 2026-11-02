@@ -14,6 +14,8 @@ export type CurrentUser = {
   email: string;
   totpEnabled: boolean;
   settings: UserSettings;
+  fixedSyncedOn: string | null;
+  fixedModelVersion: number;
 };
 
 /**
@@ -35,6 +37,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: row.email,
     totpEnabled: row.totpEnabled,
     settings: mergeSettings(row.settings),
+    fixedSyncedOn: row.fixedSyncedOn,
+    fixedModelVersion: row.fixedModelVersion,
   };
 });
 

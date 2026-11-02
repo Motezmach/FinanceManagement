@@ -27,8 +27,11 @@ export function useFormat() {
     settings: s,
     locale,
     t,
-    money: (amount: number, opts?: Parameters<typeof formatMoney>[3]) =>
-      formatMoney(amount, s.currency, s.locale, opts),
+    money: (amount: number, opts?: Parameters<typeof formatMoney>[3]) => {
+      const text = formatMoney(amount, s.currency, s.locale, opts);
+      // Inside an Arabic sentence an amount needs its own direction, or its currency symbol swaps sides.
+      return locale === "ar" ? `\u2068${text}\u2069` : text;
+    },
     kindLabel: (kind: Kind) => s.labels[kind] || t(`kinds.${kind}.label`),
     kindSub: (kind: Kind) => t(`kinds.${kind}.sub`),
     bucketLabel: (bucket: Bucket) => s.labels.buckets[bucket] || t(`buckets.${bucket}.label`),
